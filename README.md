@@ -7,7 +7,7 @@ Este proyecto permite la transcripción y procesamiento de audio/subtítulos con
 Para clonar el proyecto e instalar todas las dependencias en un solo comando:
 
 ```bash
-git clone <URL_DE_TU_REPOSITORIO>
+git clone git@github.com:fdrdm/whisptest.git
 cd whisptest
 ./setup.sh
 ```
@@ -25,5 +25,5 @@ source .venv/bin/activate
 Para iniciar el servidor principal:
 
 ```bash
-python server.py
+nohup python3 server_separation.py > server_separation.log 2>&1 & nohup python3 server_translate.py > server_translate.log 2>&1 &
 ```
