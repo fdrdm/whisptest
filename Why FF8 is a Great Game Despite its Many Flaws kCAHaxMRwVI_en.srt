@@ -1,0 +1,2984 @@
+1
+00:00:12,179 --> 00:00:16,140
+Final Fantasy VIII is not my favorite Final Fantasy game.
+
+2
+00:00:16,940 --> 00:00:19,539
+That honor belongs to Final Fantasy Tactics.
+
+3
+00:00:20,100 --> 00:00:25,420
+However, Final Fantasy VIII might still be the most important game in the franchise to me.
+
+4
+00:00:26,359 --> 00:00:32,380
+I imagine my feelings towards this game are somewhat similar to the way that a lot of Final Fantasy fans feel about VII.
+
+5
+00:00:33,719 --> 00:00:39,979
+For many, Final Fantasy VII was not only their introduction to the franchise, but to Japanese RPGs as a whole.
+
+6
+00:00:40,420 --> 00:00:45,380
+It was incredibly popular, and it pushed the boundaries with its stunning CG cutscenes.
+
+7
+00:00:46,619 --> 00:00:51,359
+The systems of the game were very accessible, fun, and they encouraged experimentation,
+
+8
+00:00:52,140 --> 00:00:56,100
+and the industrial setting was also perfectly tailored to a more mature audience,
+
+9
+00:00:56,479 --> 00:01:00,320
+and played around with many elements that the genre wasn't known for at the time.
+
+10
+00:01:01,460 --> 00:01:04,659
+It's no wonder that the game has the legacy that it does,
+
+11
+00:01:05,140 --> 00:01:10,239
+and why Square to this day are still desperately attempting to recapture that lightning in a bottle.
+
+12
+00:01:11,400 --> 00:01:15,140
+However, Final Fantasy VII was not my first Final Fantasy.
+
+13
+00:01:16,180 --> 00:01:21,879
+I was introduced to the franchise when I walked into my basement one fateful day and saw my brother and
+
+14
+00:01:21,879 --> 00:01:27,640
+his friend playing through what I now assumed to be a burned copy of the Final Fantasy VIII Pizza Hut
+
+15
+00:01:27,640 --> 00:01:34,420
+demo disc, which featured a kick-ass MIDI song that I and many others would go on to use in their Neopets shop.
+
+16
+00:01:39,329 --> 00:01:43,599
+For those who don't know, Final Fantasy VIII is a very divisive game.
+
+17
+00:01:44,420 --> 00:01:48,260
+It had the undesirable task of trying to follow up Final Fantasy VII,
+
+18
+00:01:48,980 --> 00:01:51,659
+and instead of playing it safe when developing the sequel,
+
+19
+00:01:52,219 --> 00:01:57,439
+Square decided now was the time to try and experiment with many of the core elements of the genre,
+
+20
+00:01:58,019 --> 00:02:01,299
+as well as to push forward with some of the concepts that made VII so good,
+
+21
+00:02:01,780 --> 00:02:04,519
+emphasizing the CG cutscenes again, and trying to get to the game.
+
+22
+00:02:04,560 --> 00:02:08,479
+Trimming away even more fantasy elements to make way for a modern aesthetic.
+
+23
+00:02:09,680 --> 00:02:14,259
+As you might know or have guessed, Final Fantasy VIII was not lightning in a bottle.
+
+24
+00:02:15,180 --> 00:02:17,539
+It's a very strange and flawed game,
+
+25
+00:02:18,400 --> 00:02:22,580
+and it's one of the only JRPGs I still play through to completion fairly regularly.
+
+26
+00:02:23,400 --> 00:02:28,000
+I had to overwrite numerous save files on the Steam version just to get footage for this video.
+
+27
+00:02:29,280 --> 00:02:30,900
+So let's talk about Final Fantasy VIII.
+
+28
+00:02:31,659 --> 00:02:36,419
+I'll first try to summarize the major criticisms that most people have with this game,
+
+29
+00:02:36,840 --> 00:02:42,280
+and after that I'll dive deeper into the parts of the game that I really enjoy, despite all the mess.
+
+30
+00:02:44,340 --> 00:02:45,719
+To start getting into those flaws,
+
+31
+00:02:45,939 --> 00:02:51,419
+allow me to set the scene for you the experience of someone playing this game for the first time around
+
+32
+00:02:51,419 --> 00:02:52,400
+the time that it was released.
+
+33
+00:02:54,639 --> 00:02:57,300
+Upon starting a new save of Final Fantasy VIII,
+
+34
+00:02:57,719 --> 00:03:04,539
+you are first shown this beautifully rendered cutscene unlike anything you've ever seen before, complete with a choir and orchestra,
+
+35
+00:03:05,139 --> 00:03:08,060
+and a lot of strange imagery that doesn't really mean too much yet.
+
+36
+00:03:08,860 --> 00:03:13,900
+It only really serves to get your brain juices flowing about what sort of game it is that you are about to play.
+
+37
+00:03:14,659 --> 00:03:18,979
+And it's not even clear until afterwards that at least some of what you saw may have actually happened,
+
+38
+00:03:19,620 --> 00:03:24,979
+and is likely the reason why Squall, or whatever you named your main character, ended up in this infirmary.
+
+39
+00:03:25,900 --> 00:03:30,180
+As for the rest of what you saw, you are going to be waiting a long time for those answers.
+
+40
+00:03:31,659 --> 00:03:34,979
+A mysterious girl calls you by your name before disappearing,
+
+41
+00:03:35,500 --> 00:03:39,620
+only to be replaced by a second girl whom the player is also meeting for the first time.
+
+42
+00:03:40,520 --> 00:03:43,199
+After a slightly overwhelming dump of exposition,
+
+43
+00:03:43,800 --> 00:03:48,180
+you learn that you are essentially a cadet in some kind of military academy.
+
+44
+00:03:49,139 --> 00:03:55,439
+Your teacher, Quistus, is here to remind you that you have still to complete your mandatory homework of enslaving a
+
+45
+00:03:55,439 --> 00:03:59,199
+local deity, or guardian force to use the proper terminology.
+
+46
+00:04:00,800 --> 00:04:04,719
+She offers to come with you to Ifrit's Cavern so that you can quickly finish this up,
+
+47
+00:04:05,020 --> 00:04:07,439
+and be allowed to go on the class field trip.
+
+48
+00:04:08,120 --> 00:04:11,259
+Spoiler, the field trip is Juno Beach on D-Day.
+
+49
+00:04:11,840 --> 00:04:12,280
+Buckle up.
+
+50
+00:04:13,439 --> 00:04:17,600
+So you settled on this quest, and right as you are about to step into the field,
+
+51
+00:04:18,160 --> 00:04:21,040
+you instead encounter the first major problem of this game.
+
+52
+00:04:22,339 --> 00:04:27,639
+Before you have even had a chance to experience combat, you are instead given the first of many,
+
+53
+00:04:27,899 --> 00:04:32,720
+many tutorials about the new system that Final Fantasy VIII uses, the Junction System.
+
+54
+00:04:34,040 --> 00:04:37,079
+We are roughly 15 minutes into a new game,
+
+55
+00:04:37,439 --> 00:04:41,560
+and most of the game's major criticisms stem from this right here.
+
+56
+00:04:41,899 --> 00:04:44,720
+The Junction System is, in reality,
+
+57
+00:04:45,019 --> 00:04:51,019
+a multitude of smaller systems all working in tandem to function as Final Fantasy VIII's build customization
+
+58
+00:04:51,360 --> 00:04:52,560
+and progression system.
+
+59
+00:04:53,459 --> 00:04:58,879
+The game's method for dealing with magic, summons, and other combat actions are also married to this system,
+
+60
+00:04:59,620 --> 00:05:05,519
+although that won't become clear on your first playthrough until you finally get a chance to experiment with it on your own.
+
+61
+00:05:06,319 --> 00:05:12,699
+However, Final Fantasy VIII is intent to not let you do anything other than sift through menus until it is
+
+62
+00:05:12,699 --> 00:05:15,819
+utterly convinced that you can pass an exam on the Junction System.
+
+63
+00:05:17,220 --> 00:05:22,240
+If the developers were looking to make you feel like a problem student who needed his teacher to come help
+
+64
+00:05:22,240 --> 00:05:24,660
+him after class, then the game has succeeded.
+
+65
+00:05:26,120 --> 00:05:31,139
+I imagine this is where Final Fantasy VIII lost or confused most of its returning fanbase.
+
+66
+00:05:31,779 --> 00:05:37,420
+Because if you aren't utterly determined to sit down and learn all of these menus and all of this new
+
+67
+00:05:37,420 --> 00:05:39,079
+terminology right from the get-go,
+
+68
+00:05:39,620 --> 00:05:43,240
+then you are likely just going to skip through these tutorials as fast as possible,
+
+69
+00:05:43,779 --> 00:05:45,920
+just so you can actually see what the game feels like for you.
+
+70
+00:05:47,220 --> 00:05:53,759
+I think most players would have been content if Quistis telling us how to use the gunblade was the first
+
+71
+00:05:53,759 --> 00:05:55,579
+thing that the game attempted to teach us.
+
+72
+00:05:56,019 --> 00:06:03,500
+But holy hell, the amount and length of these tutorials in the beginning section of Final Fantasy VIII is utterly daunting.
+
+73
+00:06:05,060 --> 00:06:09,879
+The game does later attempt to have characters teach us small things in battle, which is great,
+
+74
+00:06:10,759 --> 00:06:16,779
+but for the most part, it's going to be throwing terminology, abbreviations, menus, and submenus at you.
+
+75
+00:06:17,819 --> 00:06:23,500
+The pacing here is what makes the Junction System feel a lot more difficult than it actually is.
+
+76
+00:06:24,100 --> 00:06:30,079
+What they probably should have done was just give Squall and Quistis a basic set of junctions to start,
+
+77
+00:06:30,660 --> 00:06:33,519
+and then after you obtain Ifrit from the Fire Cavern,
+
+78
+00:06:33,959 --> 00:06:38,339
+explain how to Junction him and some magic onto your newly acquired Strength stat.
+
+79
+00:06:38,980 --> 00:06:39,800
+And that's it.
+
+80
+00:06:40,500 --> 00:06:45,740
+Have some faith that your players can understand what's actually going on here and clean up those damn menus.
+
+81
+00:06:47,500 --> 00:06:53,399
+So, other than the bloated tutorials, what are the actual problems of the Junction System?
+
+82
+00:06:53,819 --> 00:06:58,459
+Well, the problems lay in its differences from traditional RPG systems,
+
+83
+00:06:58,879 --> 00:07:02,540
+and the first of those differences is how the game treats magic.
+
+84
+00:07:03,779 --> 00:07:09,160
+Unlike in Final Fantasy VI or VII, you do not acquire new magic through espers or materia.
+
+85
+00:07:09,939 --> 00:07:13,639
+It is instead drawn directly from enemies, or from draw points.
+
+86
+00:07:14,579 --> 00:07:19,600
+It is treated almost like a consumable item, no mana or MP required.
+
+87
+00:07:20,120 --> 00:07:25,100
+Alternatively, you can cast magic directly from an enemy instead of stalking it beforehand,
+
+88
+00:07:25,560 --> 00:07:27,579
+which potentially saves you a turn in combat.
+
+89
+00:07:28,420 --> 00:07:35,259
+However, magic that you store on your person can be junctioned to a specific stat to increase it,
+
+90
+00:07:35,680 --> 00:07:39,759
+essentially allowing you to build your party with whatever archetypes that you had in mind.
+
+91
+00:07:41,000 --> 00:07:44,540
+The problem comes with how incredibly tedious this is.
+
+92
+00:07:45,339 --> 00:07:48,800
+Drawing magic from an enemy takes a very, very long time,
+
+93
+00:07:49,060 --> 00:07:52,019
+as it has to stalk all the way up to 100 for full effect.
+
+94
+00:07:53,220 --> 00:07:55,220
+When junctioning different magic to a stat,
+
+95
+00:07:55,959 --> 00:07:59,819
+you have no idea how effective it's going to be until you simply try it,
+
+96
+00:08:00,279 --> 00:08:03,500
+as not all magic is weighted equally depending on the stat.
+
+97
+00:08:04,399 --> 00:08:08,839
+For instance, cure magic is best junction to HP or vitality,
+
+98
+00:08:09,399 --> 00:08:14,800
+and certain offensive magic seems to have arbitrarily better values when used on strength.
+
+99
+00:08:16,100 --> 00:08:23,680
+This creates a problem where the excitement for discovering new unidentified magic on an enemy is quickly replaced by the
+
+100
+00:08:23,680 --> 00:08:27,920
+tedium of drawing it out over many, many turns into a stack of 100,
+
+101
+00:08:28,740 --> 00:08:33,320
+only then to potentially realize that it is no better than any of your current junctions.
+
+102
+00:08:34,919 --> 00:08:38,799
+Junctioning magic also creates a dubious little mind goblin for many players,
+
+103
+00:08:39,559 --> 00:08:44,639
+as casting magic that is junctioned to a stat obviously makes that stat decrease over time,
+
+104
+00:08:45,100 --> 00:08:48,179
+as well as diminishing that neat stack of 100 that you saved up.
+
+105
+00:08:49,299 --> 00:08:53,220
+Some players will deal with this by simply not casting magic at all,
+
+106
+00:08:53,700 --> 00:08:58,440
+unless it is cast from an enemy or can be easily replaced and therefore not missed.
+
+107
+00:08:59,639 --> 00:09:04,279
+This all sounds pretty bad, but the system was designed for a reason.
+
+108
+00:09:05,039 --> 00:09:10,620
+It gives the players a way to improve and customize their party members without actually having to grind for levels.
+
+109
+00:09:11,720 --> 00:09:16,320
+Final Fantasy VIII veterans know that the best way to get magic is not through combat,
+
+110
+00:09:16,860 --> 00:09:18,740
+but by refining items and cards into magic.
+
+111
+00:09:19,840 --> 00:09:23,639
+When you figure this out, then the game becomes fairly easy,
+
+112
+00:09:24,200 --> 00:09:27,940
+and that is due to a third problem, which is how the game handles leveling up.
+
+113
+00:09:29,899 --> 00:09:32,840
+Leveling up in Final Fantasy VIII is a double-edged sword.
+
+114
+00:09:34,120 --> 00:09:39,080
+This is because when you level up in this game, the enemies level up alongside you.
+
+115
+00:09:39,919 --> 00:09:40,860
+You heard that correctly.
+
+116
+00:09:41,580 --> 00:09:44,559
+Almost every enemy in this game scales to your level.
+
+117
+00:09:45,559 --> 00:09:50,240
+On paper, this system was implemented to eliminate the need for grinding.
+
+118
+00:09:51,059 --> 00:09:52,539
+What a wonderful concept.
+
+119
+00:09:53,120 --> 00:09:58,220
+What it actually did was create two different kinds of playthroughs of Final Fantasy VIII.
+
+120
+00:09:59,179 --> 00:10:01,179
+There is your standard first-time playthrough,
+
+121
+00:10:01,720 --> 00:10:06,019
+where you enter into the game not really knowing what's going on with all these new systems,
+
+122
+00:10:06,799 --> 00:10:13,340
+leveling up either on purpose or on accident, whereby within a few hours you will hit a brick wall.
+
+123
+00:10:14,240 --> 00:10:19,659
+The brick wall in this case is a boss, who is simply too difficult for you to conceivably defeat,
+
+124
+00:10:20,120 --> 00:10:24,340
+as you have either neglected your junctions or have simply leveled up far too much.
+
+125
+00:10:25,820 --> 00:10:31,460
+The second playthrough is the veterans playthrough, where you now fully understand the game's systems,
+
+126
+00:10:32,059 --> 00:10:38,179
+realize that leveling up is the enemy, and will instead choose to empower yourself through the junction system,
+
+127
+00:10:38,700 --> 00:10:46,179
+turning cards into items, items into magic, and junctioning that magic to become completely unstoppable, trivializing the difficulty.
+
+128
+00:10:47,600 --> 00:10:54,519
+I think it is pretty clear that neither of these two were the intended outcomes of implementing this scaling leveling idea.
+
+129
+00:10:55,379 --> 00:10:58,340
+It becomes a problem to be avoided or ignored.
+
+130
+00:10:58,639 --> 00:11:00,340
+It actually doesn't solve anything.
+
+131
+00:11:01,340 --> 00:11:07,019
+All that it has done is replace level grinding with magic grinding, making the system almost redundant.
+
+132
+00:11:09,299 --> 00:11:13,559
+The last problem that many people have with the game is with its story and characters.
+
+133
+00:11:14,820 --> 00:11:20,179
+I cannot comment on these flaws too much, because I personally don't fully understand most of the criticisms.
+
+134
+00:11:21,179 --> 00:11:26,419
+In the end, liking a story, its setting, or its characters is all a matter of taste.
+
+135
+00:11:26,840 --> 00:11:33,340
+However, I can understand why certain elements of the story would fail to resonate with a wide audience,
+
+136
+00:11:33,899 --> 00:11:37,559
+or even alienate people that were looking for a more straightforward narrative.
+
+137
+00:11:38,659 --> 00:11:42,179
+Final Fantasy VIII's story is very weird, and notably,
+
+138
+00:11:42,879 --> 00:11:47,200
+it takes an incredibly hard to describe turn at the start of disc 3,
+
+139
+00:11:47,639 --> 00:11:49,559
+that was definitely going to lose some people.
+
+140
+00:11:50,519 --> 00:11:54,840
+For those who didn't finish the game the whole way through, you straight up go to space at one point.
+
+141
+00:11:55,580 --> 00:11:59,779
+And there is also a time paradox which the entire story hinges upon,
+
+142
+00:12:00,279 --> 00:12:02,500
+as it tries to deal with themes like fate
+
+143
+00:12:02,759 --> 00:12:03,350
+and destiny.
+
+144
+00:12:04,000 --> 00:12:08,620
+This, of course, is ignoring the all-important amnesia subplot,
+
+145
+00:12:09,019 --> 00:12:13,919
+and the mystery of the random sympathetic belts of narcolepsy that is affecting your party,
+
+146
+00:12:14,399 --> 00:12:19,059
+which causes them to have dreamlike visions of characters that are far cooler than they are.
+
+147
+00:12:19,879 --> 00:12:24,100
+And all this, of course, being wrapped around what is ostensibly a love story.
+
+148
+00:12:24,840 --> 00:12:26,779
+It is the focus of the game, after all.
+
+149
+00:12:27,799 --> 00:12:32,600
+Needless to say, this strange amalgam story was not going to be everyone's cup of tea.
+
+150
+00:12:34,179 --> 00:12:38,980
+One of the most frequent criticisms you will find is with the game's main character, Squall.
+
+151
+00:12:39,899 --> 00:12:45,100
+People tend to call him annoying, brooding, or emo, which is true to a degree.
+
+152
+00:12:45,799 --> 00:12:46,919
+Not the emo thing, though.
+
+153
+00:12:47,100 --> 00:12:48,779
+I'm not really sure where this comes from.
+
+154
+00:12:49,700 --> 00:12:50,450
+Maybe it's the clothes.
+
+155
+00:12:51,700 --> 00:12:58,720
+People tend to read his dialogue in a particular way, his overuse of ellipses or throwaway lines like whatever.
+
+156
+00:12:59,460 --> 00:13:01,039
+By the way, that's a translation thing.
+
+157
+00:13:02,279 --> 00:13:07,000
+Squall does definitely start out far more introverted and brooding than other protagonists.
+
+158
+00:13:07,679 --> 00:13:13,519
+But I think that in the end, it really serves to highlight his arc, which I will cover eventually.
+
+159
+00:13:14,639 --> 00:13:18,320
+The other characters also tend to get written off as being fairly unmemorable,
+
+160
+00:13:18,600 --> 00:13:21,120
+but again, it really comes down to taste,
+
+161
+00:13:21,600 --> 00:13:26,759
+as I think they actually get far more to do in the story than most other RPG characters of that
+
+162
+00:13:26,759 --> 00:13:29,000
+era, each having their own moments.
+
+163
+00:13:29,779 --> 00:13:32,820
+And seeing as how I have run out of bad things to talk about,
+
+164
+00:13:33,100 --> 00:13:35,289
+I think I should begin my counterattack,
+
+165
+00:13:35,740 --> 00:13:40,000
+and explain in gruesome detail why I love this horrible mess of a game.
+
+166
+00:13:42,600 --> 00:13:47,659
+I will first state that my purpose here is not to try to convince you that Final Fantasy VIII is
+
+167
+00:13:47,659 --> 00:13:50,580
+a good game, or that you are wrong if you dislike it.
+
+168
+00:13:51,100 --> 00:13:55,860
+Instead, I simply want to highlight why many people still enjoy this game,
+
+169
+00:13:56,139 --> 00:13:59,200
+and that there is some merit to a lot of the ideas that Final Fantasy VIII has.
+
+170
+00:14:00,779 --> 00:14:05,279
+At best, I would encourage maybe giving the game another chance.
+
+171
+00:14:07,379 --> 00:14:09,919
+Alright, let's get the easy stuff out of the way.
+
+172
+00:14:10,220 --> 00:14:13,259
+The stuff that most people can agree kick ass about this game.
+
+173
+00:14:14,559 --> 00:14:19,809
+If you have only played a bit of Final Fantasy VIII, or have heard anything about it through osmosis,
+
+174
+00:14:20,200 --> 00:14:24,220
+then you likely know about Triple Triad, or are aware of the game's soundtrack.
+
+175
+00:14:25,740 --> 00:14:29,440
+As much as I want to, I am not going to be covering Triple Triad in depth,
+
+176
+00:14:29,659 --> 00:14:33,639
+as it is something I have already talked about at length in my Final Fantasy XIV video.
+
+177
+00:14:34,500 --> 00:14:40,000
+It's also a bit of a running joke to refer to Final Fantasy VIII as the game with Triple Triad in it.
+
+178
+00:14:40,940 --> 00:14:42,039
+For those who don't know,
+
+179
+00:14:42,379 --> 00:14:47,080
+it's a fairly simple-to-learn card game that lets you collect cards either by converting enemies,
+
+180
+00:14:47,600 --> 00:14:50,700
+or by playing against a myriad of NPCs within the game.
+
+181
+00:14:51,620 --> 00:14:54,200
+As I hinted at before, the reward of winning is a game.
+
+182
+00:14:54,240 --> 00:14:59,600
+The reward of winning cards can be used to easily empower your characters, which incentivizes you to keep playing,
+
+183
+00:14:59,919 --> 00:15:03,639
+and luckily enough, and especially with the addition of optional rules,
+
+184
+00:15:04,179 --> 00:15:07,000
+the game is fun enough to be worth playing in its own right.
+
+185
+00:15:07,980 --> 00:15:11,779
+It is essentially the gold standard for minigames within games,
+
+186
+00:15:11,919 --> 00:15:16,000
+but it's not really much of a selling point for Final Fantasy VIII on its own.
+
+187
+00:15:16,519 --> 00:15:18,240
+But that song is really catchy.
+
+188
+00:15:18,840 --> 00:15:19,220
+And speaking of...
+
+189
+00:15:20,899 --> 00:15:26,559
+Final Fantasy VIII's soundtrack is easily a contender for the best in the franchise, excluding XIV,
+
+190
+00:15:26,759 --> 00:15:30,899
+which I think has a somewhat of an unfair advantage being a long-running MMO.
+
+191
+00:15:32,059 --> 00:15:37,139
+I don't think anyone is going to argue that Nobuo's music is anything other than the best in the industry.
+
+192
+00:15:37,960 --> 00:15:40,100
+With Final Fantasy VIII's soundtrack in particular,
+
+193
+00:15:40,460 --> 00:15:44,200
+he tried a few new things that would go on to become staples in the franchise.
+
+194
+00:15:45,480 --> 00:15:49,200
+The first two songs you hear are the opening overture, followed by...
+
+195
+00:15:49,580 --> 00:15:53,039
+Libri Fatale, and are an absolute knockout one to punch.
+
+196
+00:15:57,960 --> 00:16:04,399
+Libri Fatale marks the first time that Nobuo would combine both choir and orchestra, which clearly paid off,
+
+197
+00:16:04,960 --> 00:16:11,039
+and it's why you hear it featured so heavily in live performances for both Final Fantasy and video game concerts alike.
+
+198
+00:16:13,059 --> 00:16:16,000
+The game also features the first pop song in the franchise,
+
+199
+00:16:16,360 --> 00:16:19,220
+with Eyes on Me, a love song with vocals and music.
+
+200
+00:16:19,460 --> 00:16:23,820
+performed by Fei Wang that was intended to take advantage of the CD technology,
+
+201
+00:16:24,259 --> 00:16:28,000
+and also became the best-selling song from a video game in Japan at the time.
+
+202
+00:16:29,559 --> 00:16:33,179
+Also, I'm not really sure why no one else has ever tried this before, but...
+
+203
+00:16:33,639 --> 00:16:37,139
+Final Fantasy VIII also just features that song that plays outside the house?
+
+204
+00:16:41,059 --> 00:16:44,179
+Seems like a strange thing for no one to have tried to capitalize on before,
+
+205
+00:16:44,399 --> 00:16:46,700
+or maybe Square just has the copyright or something.
+
+206
+00:16:47,740 --> 00:16:52,460
+On a personal note, Final Fantasy VIII's soundtrack is not my favorite of the franchise,
+
+207
+00:16:53,139 --> 00:16:56,139
+as that honor belongs to Final Fantasy Crystal Chronicles.
+
+208
+00:16:57,139 --> 00:17:02,480
+Similarly to my feelings on the game, though, it might still be the soundtrack I think about the most,
+
+209
+00:17:03,019 --> 00:17:07,539
+and it plays a pretty big factor into why I get excited to pick this game up again.
+
+210
+00:17:08,920 --> 00:17:14,900
+Replaying Final Fantasy VIII means looking forward to playing as Laguna, whose regular battle theme is just the best.
+
+211
+00:17:15,579 --> 00:17:16,099
+Fight me in the comments.
+
+212
+00:17:17,920 --> 00:17:22,579
+I also get to look forward to the various musical themes based on Succession of Witches,
+
+213
+00:17:22,700 --> 00:17:25,680
+which is by far my favorite villainous theme song,
+
+214
+00:17:25,980 --> 00:17:31,680
+and is tied in my head with Final Fantasy X's Hymn of the Faith as the best leitmotif of the franchise.
+
+215
+00:17:33,799 --> 00:17:35,180
+To close my thoughts here,
+
+216
+00:17:35,660 --> 00:17:41,640
+I mentioned in my Final Fantasy XIV video that a game only needs to have a single decent boss battle
+
+217
+00:17:41,640 --> 00:17:44,740
+with a slapper of a boss track to pique my interest,
+
+218
+00:17:45,319 --> 00:17:48,700
+and Final Fantasy Final Fantasy VIII has that and a ton more going on for it.
+
+219
+00:17:51,140 --> 00:17:55,099
+I guess now is as good a time as any to bring up the junction system again.
+
+220
+00:17:55,579 --> 00:17:56,019
+Oh boy.
+
+221
+00:17:56,660 --> 00:18:00,380
+So, I have written this script a number of times now,
+
+222
+00:18:00,680 --> 00:18:07,700
+and this was originally going to be a very short video centered entirely on the junction system and the merit I see in it.
+
+223
+00:18:08,359 --> 00:18:10,660
+But in the process of replaying the game,
+
+224
+00:18:10,839 --> 00:18:14,480
+I found myself getting a little too excited to talk about the story.
+
+225
+00:18:15,000 --> 00:18:15,859
+More on that later.
+
+226
+00:18:17,380 --> 00:18:23,359
+To start explaining why I like the junction system, I'll need to tell you about this little guy here,
+
+227
+00:18:23,799 --> 00:18:28,799
+the T-Rexar, or the much better named Archaodinos in the Japanese version.
+
+228
+00:18:29,940 --> 00:18:31,079
+If you have played this game,
+
+229
+00:18:31,480 --> 00:18:36,960
+you likely remember him as the big fucking dinosaur who kicked your ass in the training ground of Balamb Garden,
+
+230
+00:18:37,619 --> 00:18:40,779
+or in the forest just outside if you were incredibly unlucky.
+
+231
+00:18:41,980 --> 00:18:44,640
+I don't know what it is with Final Fantasy games,
+
+232
+00:18:44,859 --> 00:18:46,079
+but they seem fixated on the way that I'm going to be able to do.
+
+233
+00:18:46,319 --> 00:18:50,000
+This game is a good idea of sticking big ass reptiles near the start of the game.
+
+234
+00:18:50,400 --> 00:18:51,880
+It's almost like a series tradition.
+
+235
+00:18:52,960 --> 00:18:57,259
+Sometimes the game in question will explicitly tell you to run from these monsters,
+
+236
+00:18:57,619 --> 00:19:04,140
+as fleeing from a difficult encounter is a valid option and a decent lesson to teach the player early on.
+
+237
+00:19:05,240 --> 00:19:10,380
+Other games will merely imply the danger based on the placement of the monster near weaker enemies,
+
+238
+00:19:10,700 --> 00:19:13,579
+and they will teach you the hard way if you try to fight them.
+
+239
+00:19:14,740 --> 00:19:20,380
+These enemies almost always stick out because of how absurdly challenging they are compared to everything else you have faced
+
+240
+00:19:20,380 --> 00:19:26,039
+up to that point, and this also cleverly plants the sub-goal of coming back at a later point in
+
+241
+00:19:26,039 --> 00:19:31,099
+that game to finally defeat this enemy, thereby demonstrating how much stronger you have become.
+
+242
+00:19:31,940 --> 00:19:34,200
+Perfect RPG gameplay, in my opinion.
+
+243
+00:19:35,519 --> 00:19:40,019
+However, for more adventurous players, especially those who have played the games before,
+
+244
+00:19:40,640 --> 00:19:43,839
+they may try to find a way to kill this creature early on,
+
+245
+00:19:44,359 --> 00:19:47,720
+gaming the system so to speak in order to acquire early benefits,
+
+246
+00:19:48,059 --> 00:19:49,779
+or simply to challenge themselves.
+
+247
+00:19:51,200 --> 00:19:54,599
+This situation, however, is a little different in Final Fantasy VIII.
+
+248
+00:19:55,599 --> 00:20:01,440
+When you meet with Quistis in the Balamb Garden Training Center, she directly mentions the T-Rexar,
+
+249
+00:20:01,680 --> 00:20:06,000
+asking if Squall has ever fought one, which you likely haven't by this point.
+
+250
+00:20:06,960 --> 00:20:09,359
+She assures you that defeating one is easy,
+
+251
+00:20:09,940 --> 00:20:13,099
+as long as you are able to junction sleep magic onto your attack.
+
+252
+00:20:13,839 --> 00:20:18,430
+This is obviously a new concept in this game, as it is part of the junction system,
+
+253
+00:20:19,160 --> 00:20:25,640
+but the ramifications of what she mentions here won't really mean much until you finally see a T-Rexar for yourself.
+
+254
+00:20:27,259 --> 00:20:29,720
+This thing is designed to kick your ass.
+
+255
+00:20:30,500 --> 00:20:35,220
+Even with level scaling, the earliest version of this thing has over 10,000 health,
+
+256
+00:20:35,819 --> 00:20:37,660
+and can deal hundreds of damage per hit.
+
+257
+00:20:38,380 --> 00:20:41,039
+There is no way that you are killing this thing on accident.
+
+258
+00:20:41,420 --> 00:20:43,599
+You need to learn how to junction to beat it.
+
+259
+00:20:44,740 --> 00:20:49,539
+For comparison's sake, a Grat, the most common enemy you encounter here,
+
+260
+00:20:49,960 --> 00:20:52,720
+has only about 200 health at its lowest level,
+
+261
+00:20:53,180 --> 00:20:55,140
+and is lucky to hit you for 30 damage.
+
+262
+00:20:55,940 --> 00:21:01,640
+However, if you are looking to find that sleep magic that Quistis mentioned, then you can draw it from them.
+
+263
+00:21:02,279 --> 00:21:02,880
+How convenient.
+
+264
+00:21:04,039 --> 00:21:07,339
+This tiny section in the training grounds is, in my opinion,
+
+265
+00:21:07,599 --> 00:21:10,440
+the best teaching tool that Final Fantasy VIII has to offer,
+
+266
+00:21:11,299 --> 00:21:13,839
+and I really wish that they made this section a little longer.
+
+267
+00:21:14,779 --> 00:21:17,180
+Unlike with the previous tutorials in this game,
+
+268
+00:21:17,759 --> 00:21:23,720
+here you finally get a chance to experiment on your own with an explicitly stated goal that potentially means even
+
+269
+00:21:23,720 --> 00:21:27,480
+more to a player if they have become determined to kill this tough-as-hell dinosaur.
+
+270
+00:21:28,559 --> 00:21:31,059
+It's not as easy as Quistis first made out either.
+
+271
+00:21:31,880 --> 00:21:35,299
+Even at a 100 sleep magic junction, it can resist your attacks,
+
+272
+00:21:35,960 --> 00:21:38,559
+and so you are going to want to junction your strength,
+
+273
+00:21:38,819 --> 00:21:41,140
+so you can quickly work through that mountain of health.
+
+274
+00:21:41,759 --> 00:21:43,079
+And if you are feeling risky,
+
+275
+00:21:43,380 --> 00:21:48,359
+you might even try to take advantage of a low health squall to try and limit break as often as
+
+276
+00:21:48,359 --> 00:21:50,599
+you can, making it go by even faster.
+
+277
+00:21:52,259 --> 00:21:54,680
+The sense of mastery over the game's systems,
+
+278
+00:21:55,039 --> 00:21:58,880
+and the satisfaction of seeing this bastard die for the first time is incredible,
+
+279
+00:21:59,839 --> 00:22:04,500
+and it is one of my favorite teaching moments in any video game, hence why I bring all this up.
+
+280
+00:22:05,920 --> 00:22:08,460
+This is the potential I see in the junction system.
+
+281
+00:22:09,259 --> 00:22:13,039
+Not the mind goblins created by not having a perfect stack of a hundred magic,
+
+282
+00:22:13,579 --> 00:22:18,400
+but a system that is just complex enough that it allows me to feel as though I can break the
+
+283
+00:22:18,400 --> 00:22:20,059
+game, even if it is by design.
+
+284
+00:22:21,539 --> 00:22:23,319
+I will probably die by this statement,
+
+285
+00:22:23,799 --> 00:22:28,019
+but I think that Final Fantasy VIII is one of the most replayable RPGs ever made.
+
+286
+00:22:29,099 --> 00:22:30,539
+Just like the T-Rex are,
+
+287
+00:22:30,700 --> 00:22:34,819
+there are other moments built into the game that almost beg you to challenge yourself,
+
+288
+00:22:35,299 --> 00:22:39,859
+like the huge reward you get for defeating the spider tank during the attack on Dalit City.
+
+289
+00:22:41,799 --> 00:22:45,880
+As a small tradition of my own, when I go back to play Final Fantasy VIII,
+
+290
+00:22:46,339 --> 00:22:50,460
+I sometimes make it my goal to kill the T-Rex R as quickly as possible,
+
+291
+00:22:51,079 --> 00:22:52,599
+something like an informal speedrun.
+
+292
+00:22:53,500 --> 00:22:56,819
+Usually this will take me around two hours or so from the start of the game,
+
+293
+00:22:57,180 --> 00:22:59,380
+depending on how distracted I get with Triple Triad,
+
+294
+00:23:00,000 --> 00:23:02,259
+and it still feels satisfying for me to do,
+
+295
+00:23:02,519 --> 00:23:05,299
+as I remember being intimidated by this thing when I was a kid.
+
+296
+00:23:06,180 --> 00:23:13,180
+And if I'm feeling really cheeky, flashing lights warning, I'll treat myself and hit another one with an early degenerator.
+
+297
+00:23:15,339 --> 00:23:17,059
+You're right, Quistus, that was easy.
+
+298
+00:23:18,720 --> 00:23:24,119
+Unfortunately, there are still aspects to Final Fantasy VIII's gameplay that I cannot fully defend.
+
+299
+00:23:24,960 --> 00:23:30,119
+While I don't tend to experience the same mind goblins as other people, I know why they exist.
+
+300
+00:23:31,400 --> 00:23:36,019
+I didn't used to, but now I tend to use magic quite frequently during my playthroughs,
+
+301
+00:23:36,619 --> 00:23:38,000
+especially in the early stages.
+
+302
+00:23:38,920 --> 00:23:43,960
+It's not too difficult to acquire a huge stock of items that can be refined into more magic,
+
+303
+00:23:44,460 --> 00:23:47,200
+and so I will use magic even if I have it junctioned.
+
+304
+00:23:48,299 --> 00:23:52,519
+Most people, including myself on my first playthrough, do not play like this.
+
+305
+00:23:53,359 --> 00:23:56,779
+Typically, players junction magic to every available stat,
+
+306
+00:23:57,019 --> 00:24:00,299
+and will refuse to use magic out of fear of reducing those stats.
+
+307
+00:24:01,019 --> 00:24:05,220
+And even if you did play the game like I do now, there is still a problem.
+
+308
+00:24:06,240 --> 00:24:11,000
+Learning to master the junction system means learning how to avoid using the draw command.
+
+309
+00:24:12,000 --> 00:24:14,319
+I almost never use the draw command,
+
+310
+00:24:14,539 --> 00:24:18,539
+with the exception of the very start of the game or to draw Guardian of Forces.
+
+311
+00:24:19,559 --> 00:24:21,759
+This is indicative of a large problem.
+
+312
+00:24:22,660 --> 00:24:28,259
+Story-wise, your ability to draw magic is one of the most significant things that your character can do,
+
+313
+00:24:28,980 --> 00:24:31,819
+and yet it is one of the most tedious things ever put into a game,
+
+314
+00:24:32,099 --> 00:24:33,720
+and so you will try and avoid it.
+
+315
+00:24:34,640 --> 00:24:36,220
+In the Steam port of the game,
+
+316
+00:24:36,700 --> 00:24:41,200
+they decided to add the ability to straight up give yourself a stupid amount of magic,
+
+317
+00:24:41,759 --> 00:24:44,519
+like a hundred of everything you can find in disc one.
+
+318
+00:24:45,079 --> 00:24:45,539
+It's nuts.
+
+319
+00:24:46,440 --> 00:24:50,589
+Obviously, this fucks with the progression of the game, and it's not a great solution.
+
+320
+00:24:51,220 --> 00:24:54,200
+Honestly, if they wanted a one-button solution,
+
+321
+00:24:54,720 --> 00:24:58,640
+I would have just added the ability to tweak how much magic that you can draw from enemies.
+
+322
+00:24:59,359 --> 00:25:00,180
+An easy mode.
+
+323
+00:25:00,380 --> 00:25:00,849
+I would have just added the ability to do the game, if you will,
+
+324
+00:25:01,279 --> 00:25:04,980
+as it will still allow new or returning players to learn the other systems.
+
+325
+00:25:06,640 --> 00:25:11,859
+I want to reiterate that the point of the junction system, as well as the scaling difficulty of the enemies,
+
+326
+00:25:12,319 --> 00:25:14,359
+was to do away with traditional level grinding.
+
+327
+00:25:15,400 --> 00:25:20,180
+In a very bizarre, broken, and unintended way, they almost achieved that.
+
+328
+00:25:21,420 --> 00:25:25,680
+When I play the game, the only time that I grind for experience is at the very beginning,
+
+329
+00:25:26,420 --> 00:25:29,299
+just long enough for Quetzalcoatl to learn card mod, and Shiva to learn how to refine the game.
+
+330
+00:25:30,380 --> 00:25:31,079
+ice magic.
+
+331
+00:25:31,680 --> 00:25:36,160
+I can then play as little of or as much of triple triad to refine as much magic as I
+
+332
+00:25:36,160 --> 00:25:41,440
+want, depending on my goal for that playthrough, which usually takes about an hour and a half at most.
+
+333
+00:25:42,460 --> 00:25:46,450
+After that, I can leisurely stroll my way through the entire story.
+
+334
+00:25:48,859 --> 00:25:56,839
+One of the key features of the junction system not often talked about is the ability to freely swap all of your junctions between characters.
+
+335
+00:25:57,960 --> 00:26:05,299
+This is actually a huge thing, as a large part of the story has Squall delegating the party into squads,
+
+336
+00:26:05,319 --> 00:26:06,660
+which you will often switch between.
+
+337
+00:26:07,960 --> 00:26:10,480
+Other Final Fantasy games sometimes attempt this,
+
+338
+00:26:10,920 --> 00:26:15,660
+but it can suck with varying degrees of ass depending on how much you use those specific characters,
+
+339
+00:26:16,279 --> 00:26:19,700
+sometimes leaving you with a character that you have never even used before.
+
+340
+00:26:20,759 --> 00:26:24,559
+In Final Fantasy VIII, though, you can easily use every single character,
+
+341
+00:26:25,119 --> 00:26:27,799
+and it allows for the story to experiment and create a new character.
+
+342
+00:26:35,220 --> 00:26:45,259
+And so you can see why something like the junction system needed to exist here,
+
+343
+00:26:45,700 --> 00:26:51,339
+in order to separate your character's avatar strength from leveling so that these story moments can even work in the first place.
+
+344
+00:26:52,440 --> 00:26:56,700
+Also, you may now be getting hints as to why I rewrote this script so much,
+
+345
+00:26:56,859 --> 00:27:00,720
+as I cannot seem to avoid getting into the story no matter what I bring up.
+
+346
+00:27:01,319 --> 00:27:03,519
+So let's try to not put it off any longer,
+
+347
+00:27:03,619 --> 00:27:06,880
+and get into what I really wanted to share about this game.
+
+348
+00:27:09,359 --> 00:27:12,599
+I will first address the nostalgia that I have for this game,
+
+349
+00:27:12,759 --> 00:27:16,799
+which probably plays the largest factor into why I replay it so often.
+
+350
+00:27:17,700 --> 00:27:22,640
+It can be hard for me to separate what I genuinely enjoy about Final Fantasy VIII and its story,
+
+351
+00:27:22,779 --> 00:27:26,059
+versus what I've grown accustomed to because it's what I grew up with.
+
+352
+00:27:27,160 --> 00:27:30,920
+I did not play Final Fantasy VII or IX at a formative age,
+
+353
+00:27:31,319 --> 00:27:34,859
+so I tend to look at those games far more critically than I do with VIII,
+
+354
+00:27:35,500 --> 00:27:40,440
+and even recognizing that, it can still be difficult to tell when I am being unfair.
+
+355
+00:27:41,339 --> 00:27:43,900
+In other words, this is all just my opinion,
+
+356
+00:27:44,140 --> 00:27:47,539
+so please take everything that I say in this video with a pinch of salt.
+
+357
+00:27:48,059 --> 00:27:52,180
+Also, it is fair to say that there will be major spoilers from here on,
+
+358
+00:27:52,460 --> 00:27:55,400
+as I will be discussing certain characters and events in depth.
+
+359
+00:27:57,220 --> 00:27:59,099
+Let's talk about party dynamic.
+
+360
+00:28:00,059 --> 00:28:01,660
+This is a thing in RPGs,
+
+361
+00:28:02,099 --> 00:28:07,319
+and it has to do with how the main characters of the game relate to each other and to the plot.
+
+362
+00:28:08,500 --> 00:28:11,579
+Unlike in other RPGs, in Final Fantasy VIII,
+
+363
+00:28:11,960 --> 00:28:18,519
+your party is not made up of a ragtag group of random adventurers and mascot characters with disconnected backstories.
+
+364
+00:28:18,940 --> 00:28:26,160
+Instead, the bulk of your party are members of a paramilitary group called Seed, spelt with a stylized D.
+
+365
+00:28:26,839 --> 00:28:31,920
+which is not actually arbitrary, but intended so that you can read it backwards as D's.
+
+366
+00:28:32,779 --> 00:28:36,299
+Some of you already know what this stands for, you know if you know,
+
+367
+00:28:36,779 --> 00:28:39,440
+but if you don't, feel free to ask in the comments.
+
+368
+00:28:40,779 --> 00:28:44,859
+This setup is a great framing device, and it allows for you, the player,
+
+369
+00:28:45,140 --> 00:28:50,940
+and Squall, the aspiring squad leader, to simultaneously meet the members of his would-be team.
+
+370
+00:28:51,900 --> 00:28:59,000
+In order, you meet Quistus, who starts out as Squall's instructor and also clearly has unrequited feelings for him,
+
+371
+00:28:59,579 --> 00:29:04,940
+and so agrees to step down as an instructor so that she can be assigned to his team for an upcoming mission.
+
+372
+00:29:06,019 --> 00:29:08,220
+The next two, Zell and Selfie,
+
+373
+00:29:08,640 --> 00:29:13,680
+are two cadets whom Squall worked with during his trial mission and graduated alongside him.
+
+374
+00:29:13,880 --> 00:29:21,660
+Rinoa, the only non-Seed member, starts out as the head of a small resistance group called the Forest Owls,
+
+375
+00:29:22,039 --> 00:29:26,240
+and is the client who hires Seed, thereby enlisting Squall's team.
+
+376
+00:29:27,299 --> 00:29:30,039
+And the final member is another Seed Specialist,
+
+377
+00:29:30,339 --> 00:29:35,299
+a sniper who is assigned to your team to carry out an assassination on a sorceress.
+
+378
+00:29:35,839 --> 00:29:36,900
+More on that in a bit.
+
+379
+00:29:38,400 --> 00:29:46,420
+The dynamic here does wonders to satisfy a nagging question I often find myself asking when I play games with a large cast of characters.
+
+380
+00:29:47,480 --> 00:29:50,539
+That question being, why is everyone here?
+
+381
+00:29:51,680 --> 00:29:58,019
+I typically ask myself this question subconsciously any time that a major plot threat is resolved in a story.
+
+382
+00:29:58,799 --> 00:30:03,079
+Is there still a reason why each of the characters are invested in the main plot?
+
+383
+00:30:03,799 --> 00:30:06,859
+Would it make even more sense if a character simply just left?
+
+384
+00:30:08,890 --> 00:30:14,619
+A good example of a game that does not answer this question well is Final Fantasy XII.
+
+385
+00:30:15,579 --> 00:30:20,119
+The bulk of the story in XII is centered around the characters of Ash and Bosh,
+
+386
+00:30:20,500 --> 00:30:22,140
+who are not the main characters.
+
+387
+00:30:23,200 --> 00:30:29,440
+The actual main character, Vaughn, is a fish out of water who is only circumstantially related to the other characters,
+
+388
+00:30:29,940 --> 00:30:32,180
+with the exception of his friend Pinello,
+
+389
+00:30:32,579 --> 00:30:35,460
+who might even have less of a reason to be in the party than him.
+
+390
+00:30:36,420 --> 00:30:42,839
+The two of them are essentially strung along by a series of serendipitous events that keep them in the party
+
+391
+00:30:42,839 --> 00:30:46,039
+long enough that it would simply become weird if they just left.
+
+392
+00:30:46,859 --> 00:30:49,960
+And the other characters treat Vaughn almost like he's a nuisance,
+
+393
+00:30:50,599 --> 00:30:55,319
+as he has to constantly ask questions about the basic history of the world on behalf of the player,
+
+394
+00:30:55,799 --> 00:30:56,680
+just so that we're informed.
+
+395
+00:30:58,119 --> 00:31:00,319
+Time for one of my iconic bad analogies.
+
+396
+00:31:00,940 --> 00:31:05,500
+But he's like if, in Star Wars, Luke Skywalker didn't even meet Obi-Wan.
+
+397
+00:31:15,059 --> 00:31:17,160
+Why is Vaughn still here?
+
+398
+00:31:18,000 --> 00:31:21,099
+I guess he can swing a sword good, and he doesn't like the Empire,
+
+399
+00:31:21,599 --> 00:31:24,000
+but that describes a lot of people in that setting.
+
+400
+00:31:25,079 --> 00:31:30,140
+In contrast, Final Fantasy X does a great job of establishing its team dynamic.
+
+401
+00:31:31,500 --> 00:31:36,440
+Once again, our main character is the Odd Man Out, an almost literally fish out of water.
+
+402
+00:31:37,339 --> 00:31:43,480
+Titus' only real connection to the party is through Orin, who is also one of Yuna's father's best friends,
+
+403
+00:31:43,920 --> 00:31:45,380
+and a legendary guardian.
+
+404
+00:31:46,539 --> 00:31:49,720
+The rest of the party has a direct connection through Yuna,
+
+405
+00:31:50,119 --> 00:31:53,250
+by being one of her guardians and helping her on her quest,
+
+406
+00:31:53,559 --> 00:31:54,619
+or is her blood relative.
+
+407
+00:31:55,920 --> 00:32:00,720
+The game, however, gives Titus the chance to interact with these party members on his own,
+
+408
+00:32:01,140 --> 00:32:03,079
+before these other connections are revealed.
+
+409
+00:32:03,720 --> 00:32:10,059
+And the mystery of how Titus even arrived in Spira is both interesting and related enough to the quest of
+
+410
+00:32:10,059 --> 00:32:13,880
+the main party that they are also invested in discovering more about him.
+
+411
+00:32:14,579 --> 00:32:16,240
+This is where Titus is meant to be.
+
+412
+00:32:16,819 --> 00:32:20,240
+The answers to his mystery lay somewhere at the end of this journey.
+
+413
+00:32:21,019 --> 00:32:25,920
+However, my favorite of these dynamics is Final Fantasy VIII's by far.
+
+414
+00:32:26,799 --> 00:32:30,619
+What starts out simply enough as Squall's first mission as a leader,
+
+415
+00:32:31,119 --> 00:32:34,259
+aiding a small resistance group from a city called Timber,
+
+416
+00:32:34,920 --> 00:33:05,579
+quickly spot to the
+
+417
+00:33:05,579 --> 00:33:05,579
+end of the story, and the end of the story.
+
+418
+00:33:05,579 --> 00:33:08,339
+And the story of the story is that she can see you in the middle of a conspiracy to assassinate
+
+419
+00:33:08,339 --> 00:33:11,359
+her before she can seize control of Galbadia's military.
+
+420
+00:33:12,599 --> 00:33:19,359
+There is a constantly evolving reason why the characters are directly invested in the plot outside of just merely following orders.
+
+421
+00:33:20,299 --> 00:33:26,319
+Slight tangent, but my favorite of these reasons is the previously mentioned mystery of the shared narcolepsy.
+
+422
+00:33:27,119 --> 00:33:31,099
+Like many things in this game, if you haven't played it, then it's kind of hard to explain.
+
+423
+00:33:32,500 --> 00:33:38,059
+Before your mission even starts, Squall and his team suddenly pass out on the train heading to Timber,
+
+424
+00:33:38,660 --> 00:33:44,359
+whereby they have a shared dream about a group of Galbadian soldiers named Laguna, Kuros, and Ward,
+
+425
+00:33:44,839 --> 00:33:46,380
+who are fighting in the Timber area.
+
+426
+00:33:47,380 --> 00:33:50,319
+When the dream ends, they all realize they saw the same thing,
+
+427
+00:33:51,059 --> 00:33:53,420
+but have no clue as to why it even happened at all.
+
+428
+00:33:54,299 --> 00:33:59,380
+These visions continue to follow Squall and anyone who joins his team throughout the game,
+
+429
+00:33:59,799 --> 00:34:04,079
+giving added context to some of the factions and locations you encounter in the game,
+
+430
+00:34:04,460 --> 00:34:08,719
+as well as clearly demonstrating that there is something supernatural targeting their group.
+
+431
+00:34:09,460 --> 00:34:10,900
+Laguna also just kicks ass.
+
+432
+00:34:11,400 --> 00:34:14,920
+He's a fucking amazing character, he has a sick battle theme,
+
+433
+00:34:15,260 --> 00:34:19,059
+and is probably the most regular and relatable dude in the entire franchise.
+
+434
+00:34:20,460 --> 00:34:23,960
+I'm doing it again, but if this were an episode of a sitcom,
+
+435
+00:34:24,280 --> 00:34:26,659
+these visions would serve as the B-plot.
+
+436
+00:34:27,119 --> 00:34:32,719
+And while they don't really feel terribly related at first, they are interesting enough to string you along.
+
+437
+00:34:33,179 --> 00:34:37,639
+And it also plants the seed in your head of about whether or not the party will ever meet up
+
+438
+00:34:37,639 --> 00:34:42,219
+with Laguna in person, and this has a pretty neat payoff near the end of the story.
+
+439
+00:34:43,340 --> 00:34:48,579
+With that tangent over, I want to talk more about Squall and his character arcs.
+
+440
+00:34:49,820 --> 00:34:51,260
+I really like Squall as a protagonist.
+
+441
+00:34:52,320 --> 00:34:56,789
+I can see more of myself in him than I do with most other video game protagonists.
+
+442
+00:34:57,679 --> 00:35:02,639
+I hope that you are now picturing me as a brooding teenager who dresses in chains and dark clothing.
+
+443
+00:35:03,860 --> 00:35:05,599
+What I will say is this.
+
+444
+00:35:06,300 --> 00:35:10,679
+When creating a protagonist for your RPG, you have two choices that you can make.
+
+445
+00:35:11,420 --> 00:35:13,440
+You can have your protagonist say mostly nothing.
+
+446
+00:35:14,159 --> 00:35:17,920
+That way you can much more easily project yourself into the shoes of that character,
+
+447
+00:35:18,480 --> 00:35:25,579
+as that character is never at risk of saying or doing anything that would otherwise interfere with your ability to see yourself as that character.
+
+448
+00:35:26,559 --> 00:35:29,519
+You can safely imagine what those characters are saying in their head,
+
+449
+00:35:29,880 --> 00:35:33,400
+without having to try and figure out what they might be like in person.
+
+450
+00:35:34,519 --> 00:35:40,280
+Or you can go ahead and do the complete opposite thing and create a much more well-defined character.
+
+451
+00:35:41,000 --> 00:35:43,460
+One who speaks and acts with their own agency.
+
+452
+00:35:44,039 --> 00:35:46,219
+Which is a much riskier choice by far,
+
+453
+00:35:46,360 --> 00:35:53,420
+as you can easily alienate players by having your protagonist say or do something that a player would not do in a given situation.
+
+454
+00:35:54,320 --> 00:36:01,239
+However, this character has far more potential to embody the specific themes that the story may be trying to convey.
+
+455
+00:36:02,619 --> 00:36:04,760
+Squall is clearly the latter of those two.
+
+456
+00:36:05,539 --> 00:36:09,539
+You can narrow down his character pretty easily into two major arcs.
+
+457
+00:36:10,460 --> 00:36:13,019
+The first is him embracing his role as a leader,
+
+458
+00:36:13,679 --> 00:36:16,480
+and the second is his romantic relationship with Rinoa.
+
+459
+00:36:17,940 --> 00:36:20,039
+It's important to keep these two arcs in mind,
+
+460
+00:36:20,360 --> 00:36:24,960
+as the squall we meet at the start of the game hardly seems capable of being a leader.
+
+461
+00:36:25,420 --> 00:36:28,579
+In fact, he starts out as a student, a follower.
+
+462
+00:36:29,880 --> 00:36:33,719
+He is also shown to not really be interested in romance of any kind.
+
+463
+00:36:34,599 --> 00:36:40,340
+He is highly introverted, has inner monologues, and seems bothered to even have to deal with other people.
+
+464
+00:36:41,320 --> 00:36:45,860
+He is also surrounded by people who seem to understand him better than he understands himself.
+
+465
+00:36:46,579 --> 00:36:50,679
+And are essentially able to trick him into caring about things he otherwise wouldn't.
+
+466
+00:36:51,679 --> 00:36:53,119
+He doesn't know who he is yet.
+
+467
+00:36:54,059 --> 00:36:59,719
+The only reason he dances with Rinoa at the start of the game is because of how forceful her personality is.
+
+468
+00:37:00,340 --> 00:37:02,679
+She is essentially a foil to him in this scene.
+
+469
+00:37:03,780 --> 00:37:06,179
+This introduction is important, because again,
+
+470
+00:37:06,719 --> 00:37:11,420
+the squall we see at the end of the game hardly seems like the character we met at the beginning.
+
+471
+00:37:12,440 --> 00:37:16,800
+The options to choose dialogue that are outright dismissive, the ellipses whatever,
+
+472
+00:37:17,519 --> 00:37:23,019
+are slowly phased out of the game as squall is thrust into situations where he is forced to be a leader.
+
+473
+00:37:24,059 --> 00:37:27,860
+I think it is also important to distinguish that squall doesn't want to be a leader.
+
+474
+00:37:28,360 --> 00:37:29,539
+He is being made into one.
+
+475
+00:37:30,280 --> 00:37:31,980
+He is just a seed, if you will.
+
+476
+00:37:32,659 --> 00:37:35,639
+Planted into the role of a leader, whether he likes it or not,
+
+477
+00:37:36,039 --> 00:37:39,539
+and whether he can grow into a successful leader is up to him.
+
+478
+00:37:40,300 --> 00:37:43,139
+His decision is whether or not to embrace that role.
+
+479
+00:37:44,159 --> 00:37:47,079
+The internal monologue he has is useful to the player,
+
+480
+00:37:47,300 --> 00:37:51,980
+as it lets you see that the character isn't rapidly changing into something that he wasn't before.
+
+481
+00:37:52,579 --> 00:37:55,380
+However, that isn't what everyone else sees.
+
+482
+00:37:56,019 --> 00:38:01,079
+They can only see squall, the most capable person in any given situation.
+
+483
+00:38:01,960 --> 00:38:05,880
+He is the character that is most fit to be a leader among all others,
+
+484
+00:38:06,380 --> 00:38:10,300
+as we see time and time again demonstrations of failed leadership.
+
+485
+00:38:11,460 --> 00:38:15,119
+We see Cypher, who is too cavalier to even follow basic orders.
+
+486
+00:38:16,099 --> 00:38:20,059
+Quistis, who fails to even maintain order with her own students.
+
+487
+00:38:20,679 --> 00:38:28,599
+And even Headmaster Cid, who eventually buckles under the weight of a crisis and has to rely on squall to save Balambgarden.
+
+488
+00:38:29,619 --> 00:38:31,300
+This is why I like squall.
+
+489
+00:38:31,940 --> 00:38:37,179
+Not because I'm edgy, but because I can empathize with him far more than I can with other protagonists.
+
+490
+00:38:37,909 --> 00:38:42,880
+We have all been thrust into a situation in which we have felt that we weren't in control anymore.
+
+491
+00:38:43,519 --> 00:38:49,719
+And watching squall struggle, and then eventually succeed over his own problems, makes him more heroic and relatable.
+
+492
+00:38:50,480 --> 00:38:52,360
+Someone that we want to aspire to be.
+
+493
+00:38:53,079 --> 00:38:53,679
+A leader.
+
+494
+00:38:55,480 --> 00:39:00,480
+Squall's second arc might even be more important to the story, depending on your interpretation of events.
+
+495
+00:39:01,699 --> 00:39:07,239
+One thing to point out is that while squall does eventually become more confident in himself as a leader,
+
+496
+00:39:07,719 --> 00:39:11,659
+eventually learning to rely on others and not to try and solve everything himself,
+
+497
+00:39:12,460 --> 00:39:18,440
+at some point his lack of confidence returns, and it's when he starts to become more attached to Rinoa.
+
+498
+00:39:20,860 --> 00:39:23,719
+I want to clarify that I do not like love stories.
+
+499
+00:39:24,059 --> 00:39:25,159
+I never have.
+
+500
+00:39:25,679 --> 00:39:28,039
+And I don't even have a great reason as to why.
+
+501
+00:39:29,199 --> 00:39:31,099
+I won't imply that I hate them,
+
+502
+00:39:31,360 --> 00:39:35,699
+but I can't name a single romance film that I like off the top of my head,
+
+503
+00:39:36,239 --> 00:39:39,920
+and in books or games that feature it, it's usually my least favorite part.
+
+504
+00:39:41,059 --> 00:39:45,300
+It's probably because a lot of romance comes off as forced or unnatural,
+
+505
+00:39:45,920 --> 00:39:49,880
+or at worst, it's just sexual attraction between two good-looking characters.
+
+506
+00:39:51,300 --> 00:39:54,280
+For me, real love does not look like it does in the movies.
+
+507
+00:39:54,280 --> 00:39:55,840
+It's far more complicated.
+
+508
+00:39:56,500 --> 00:40:02,280
+I could probably count the number of love stories that I genuinely enjoy using one half of one hand,
+
+509
+00:40:02,880 --> 00:40:05,059
+and Final Fantasy VIII is one of those exceptions.
+
+510
+00:40:06,500 --> 00:40:10,480
+I've read people's criticisms of the love story, saying that it also feels forced,
+
+511
+00:40:10,820 --> 00:40:12,179
+but I can't agree with that.
+
+512
+00:40:13,260 --> 00:40:16,900
+It does have this scene with a very sappy love song,
+
+513
+00:40:17,239 --> 00:40:19,059
+but it's not like we're seeing the two get married.
+
+514
+00:40:20,000 --> 00:40:25,400
+The climax of their love story is essentially the two of them realizing that they do actually love each other.
+
+515
+00:40:26,099 --> 00:40:27,139
+But it's complicated.
+
+516
+00:40:28,139 --> 00:40:35,199
+The song itself is an in-universe reference to Laguna and Julia, Squall's maybe dad and Rinoa's definitely mom,
+
+517
+00:40:35,480 --> 00:40:37,079
+who we know did not end up together.
+
+518
+00:40:38,440 --> 00:40:41,739
+This scene is filled with apprehension about what comes next,
+
+519
+00:40:42,360 --> 00:40:49,219
+and more importantly, how we got here feels pretty natural, especially considering the very fantastical circumstances.
+
+520
+00:40:50,440 --> 00:40:54,440
+It's not as though there wasn't 30 hours of bumbling from these two dummies before we got here.
+
+521
+00:40:55,679 --> 00:41:01,579
+Whether you like this or not, this is undoubtedly the legacy that Final Fantasy VIII left behind.
+
+522
+00:41:02,179 --> 00:41:04,239
+Well, this and Triple Triad.
+
+523
+00:41:05,260 --> 00:41:11,119
+Final Fantasy IX and X would go on to focus more heavily on a romantic subplot as a major part
+
+524
+00:41:11,119 --> 00:41:16,739
+of its story, with X even channeling the sappy love song energy in one of its most famous scenes.
+
+525
+00:41:20,820 --> 00:41:23,519
+For my money, though, the romance worked best in VIII,
+
+526
+00:41:23,880 --> 00:41:26,809
+as it is clearly the focus of one of the game's major themes.
+
+527
+00:41:28,199 --> 00:41:33,780
+This game features a TON of love stories, mostly failed ones that end in tragedy.
+
+528
+00:41:34,800 --> 00:41:37,940
+There is Quistus' unrequited love for Squall, as I mentioned,
+
+529
+00:41:38,760 --> 00:41:42,500
+which pays off in a great scene that I have to mention because it's one of my favorites.
+
+530
+00:41:43,489 --> 00:41:46,539
+Right after Rinoa and Squall return from space,
+
+531
+00:41:46,960 --> 00:41:51,500
+and Squall fails to convince Rinoa not to put herself in stasis for everyone's protection,
+
+532
+00:41:52,159 --> 00:41:57,360
+Quistus then has to remind the dummy why he even jumped into space to save her in the first place,
+
+533
+00:41:57,699 --> 00:41:59,579
+in which Squall basically goes, Die?
+
+534
+00:42:01,159 --> 00:42:04,460
+It's one of the most sobering and adult moments in the franchise,
+
+535
+00:42:04,820 --> 00:42:09,820
+and it has the subtext of Quistus saying, You fucking broke my heart, you piece of shit.
+
+536
+00:42:09,820 --> 00:42:10,980
+Now go save your girlfriend.
+
+537
+00:42:12,219 --> 00:42:16,300
+Rinoa herself had a crush on Cipher at the start, if you can remember,
+
+538
+00:42:16,960 --> 00:42:22,179
+which she admits to after it is revealed that Cipher was executed for his attack on the president.
+
+539
+00:42:22,519 --> 00:42:28,500
+This, of course, also comes after she admitted that the only reason she danced with Squall at the beginning was
+
+540
+00:42:28,500 --> 00:42:32,760
+because she was looking for someone, although there was probably something else there too.
+
+541
+00:42:33,780 --> 00:42:36,760
+Later on, we also learn that Edia and Cid were married,
+
+542
+00:42:37,000 --> 00:42:41,079
+which sort of recontextualizes that whole sorceress assassination thing that Cid had.
+
+543
+00:42:42,400 --> 00:42:47,460
+And of course, there is the horrific story that is Laguna's love life, which I won't even get into.
+
+544
+00:42:48,559 --> 00:42:52,920
+When you establish a setting in which love almost invariably leads to tragedy,
+
+545
+00:42:53,539 --> 00:42:57,699
+it makes the one that might actually work out feel all the more special,
+
+546
+00:42:58,119 --> 00:42:59,380
+and worth fighting for.
+
+547
+00:43:00,159 --> 00:43:03,539
+It's a strong motivator to continue the story, to say the least.
+
+548
+00:43:03,639 --> 00:43:07,900
+Alright, this section has already grown into a monster,
+
+549
+00:43:08,659 --> 00:43:11,320
+but I still gotta address the elephant in the room,
+
+550
+00:43:11,539 --> 00:43:15,960
+which is all that shit that happens when this asshole starts shooting baskets,
+
+551
+00:43:16,199 --> 00:43:19,219
+and all that shit that happens right at the start of Disc 3.
+
+552
+00:43:20,119 --> 00:43:22,019
+Some of you may have seen this coming.
+
+553
+00:43:22,659 --> 00:43:26,239
+I don't want to further bog things down by explaining the entire story,
+
+554
+00:43:26,400 --> 00:43:31,840
+but allow me to briefly describe the two major plot twists in the game for those who don't know.
+
+555
+00:43:33,960 --> 00:43:39,639
+So Disc 1 concludes with a battle against the sorceress Edia, whom you have been tasked with assassinating
+
+556
+00:43:39,980 --> 00:43:42,300
+before she can take over all of Galbadia.
+
+557
+00:43:43,320 --> 00:43:48,659
+Despite winning the battle, the fight concludes with you failing to kill Edia, catching an icicle,
+
+558
+00:43:48,840 --> 00:43:51,679
+and then waking up in prison at the start of Disc 2.
+
+559
+00:43:52,760 --> 00:43:57,000
+It seems at this point that they are setting up Edia to become the ultimate villain of the game,
+
+560
+00:43:57,440 --> 00:44:02,739
+which would seem pretty obvious considering the amount the game and the promotional material focuses on her.
+
+561
+00:44:03,820 --> 00:44:08,780
+So then, you might be surprised to hear that the game actually tries to step away from this idea,
+
+562
+00:44:09,719 --> 00:44:15,900
+and that all starts right here with this infamous basketball scene, the first major twist of the game.
+
+563
+00:44:16,960 --> 00:44:22,460
+It is revealed by Irvine why earlier in the game he had hesitated to take his shot against Edia,
+
+564
+00:44:22,860 --> 00:44:25,960
+which could have killed her without the need to engage her in a fight.
+
+565
+00:44:27,119 --> 00:44:31,800
+What originally just seemed like nerves in the first moment of Irvine's character development,
+
+566
+00:44:32,480 --> 00:44:38,960
+he instead reveals that he couldn't shoot her because she is the woman who took care of them all when they were children.
+
+567
+00:44:39,860 --> 00:44:43,380
+You see, the entire cast of the game, minus Rinoa,
+
+568
+00:44:43,500 --> 00:44:49,420
+but including Cipher and another character I won't even get into, were all orphans who stayed at the same orphanage,
+
+569
+00:44:49,840 --> 00:44:51,519
+and Edia was their caretaker.
+
+570
+00:44:52,599 --> 00:44:57,280
+It is revealed that every single character has amnesia, including Edia,
+
+571
+00:44:57,860 --> 00:45:03,400
+and the reason for this is likely due to the fact that members of Seed draw their powers from Guardian
+
+572
+00:45:03,400 --> 00:45:06,239
+Forces, who in turn take their memories.
+
+573
+00:45:07,400 --> 00:45:13,559
+The reason Irvine remembers this is because he had never used Guardian Forces until he joined up with your team.
+
+574
+00:45:14,840 --> 00:45:21,300
+I believe the purpose of this bombshell of information is to make you question the nature of Guardian Forces,
+
+575
+00:45:21,559 --> 00:45:22,420
+and sorceresses.
+
+576
+00:45:23,480 --> 00:45:28,400
+How does a demonstrably caring woman come to nearly kill the children she raised?
+
+577
+00:45:28,840 --> 00:45:32,900
+And how do those children almost assassinate their surrogate mother without realizing it?
+
+578
+00:45:33,840 --> 00:45:36,800
+There is something clearly unnatural at play here.
+
+579
+00:45:37,280 --> 00:45:38,219
+A new mystery.
+
+580
+00:45:39,559 --> 00:45:44,679
+Most people get caught up on how incredibly convenient it is that none of the characters remembered each other.
+
+581
+00:45:45,260 --> 00:45:50,420
+But what this scene does do is alter the characters' motivation and plan of attack moving forward.
+
+582
+00:45:51,239 --> 00:45:53,510
+They no longer want to kill the sorceress.
+
+583
+00:45:54,039 --> 00:45:55,989
+They would save her if it is at all possible.
+
+584
+00:45:57,280 --> 00:46:00,639
+The beginning of disc 3 then is the aftermath to this setup,
+
+585
+00:46:01,179 --> 00:46:05,099
+where after you finally defeat Edia in your rematch at the end of disc 2,
+
+586
+00:46:05,980 --> 00:46:09,039
+the game pulls the trigger and has her regain her memories,
+
+587
+00:46:09,699 --> 00:46:12,519
+or in this case, control over her own body.
+
+588
+00:46:13,380 --> 00:46:18,019
+She reveals, halfway through the game, that all of her actions were not her own,
+
+589
+00:46:18,480 --> 00:46:22,840
+but she was actually being controlled by another character that we haven't even heard of yet,
+
+590
+00:46:23,639 --> 00:46:26,389
+the sorceress living in the future, Ultimecia.
+
+591
+00:46:27,000 --> 00:46:31,039
+Again, another twist that feels almost completely out of left field,
+
+592
+00:46:31,360 --> 00:46:36,380
+and made all the more unbelievable considering the game's hyper-focus on Edia up to this point.
+
+593
+00:46:37,400 --> 00:46:41,719
+I would be lying if I said that when I got to this point on my original playthrough that I
+
+594
+00:46:41,719 --> 00:46:46,360
+wasn't also scratching my head, wondering what the hell this game was even trying to do.
+
+595
+00:46:47,460 --> 00:46:51,119
+At this point in the story, there are so many unanswered questions,
+
+596
+00:46:51,699 --> 00:46:54,699
+and those that get addressed are given very confusing answers.
+
+597
+00:46:55,860 --> 00:46:59,679
+A lot of people that I knew who played this game mentally checked out at this point,
+
+598
+00:47:00,059 --> 00:47:03,619
+or just straight up quit playing, and it's not really hard to see why.
+
+599
+00:47:04,380 --> 00:47:08,059
+And while I recognize that this all could have been handled a lot better,
+
+600
+00:47:08,659 --> 00:47:11,699
+I do appreciate what disc 3 was trying to do.
+
+601
+00:47:12,539 --> 00:47:17,500
+It tries to recontextualize the initial threat of the game as being just a symptom of a much,
+
+602
+00:47:18,099 --> 00:47:20,760
+much greater threat that you aren't even sure how to face yet.
+
+603
+00:47:21,860 --> 00:47:23,039
+For those who stuck with it,
+
+604
+00:47:23,500 --> 00:47:26,539
+this is the part of the game that gives you the bulk of the world building,
+
+605
+00:47:26,880 --> 00:47:30,800
+and it goes on to inform us how sorceresses and magic operate in this setting.
+
+606
+00:47:31,619 --> 00:47:36,780
+It also does actually resolve most of the plot threads, and gives us a conclusion to Laguna's story.
+
+607
+00:47:37,940 --> 00:47:42,179
+If you made it to disc 3, then I would definitely suggest sticking around to the end,
+
+608
+00:47:42,300 --> 00:47:44,280
+as there is some crazy shit that happens.
+
+609
+00:47:45,300 --> 00:47:49,440
+And by the time that disc 4 starts, there are very few unanswered questions,
+
+610
+00:47:50,019 --> 00:47:53,480
+with the last major one being the true motivations of the villain.
+
+611
+00:47:54,340 --> 00:47:59,400
+And that is where I get incredibly controversial and start to talk about a fan theory.
+
+612
+00:48:00,099 --> 00:48:03,159
+The Rinoa is Ultimecia theory, if you are aware of it.
+
+613
+00:48:03,800 --> 00:48:05,440
+Oh boy, get excited.
+
+614
+00:48:07,219 --> 00:48:09,219
+So this is going to be the king of all tangents.
+
+615
+00:48:09,860 --> 00:48:14,420
+I know that fan theories aren't for everyone, and that this isn't an Iceberg Explained video,
+
+616
+00:48:15,099 --> 00:48:19,000
+but this theory covers the version of events that I interpret when I play the game,
+
+617
+00:48:19,539 --> 00:48:22,699
+and I promise that there is actually a point to all of this in the end.
+
+618
+00:48:23,500 --> 00:48:25,699
+Anyways, I guess consider this as a warning.
+
+619
+00:48:25,980 --> 00:48:29,000
+If you are still here, then here we fucking go.
+
+620
+00:48:30,260 --> 00:48:35,099
+The Rinoa is Ultimecia theory is one of the few fan theories that I wholly subscribe to.
+
+621
+00:48:36,000 --> 00:48:38,159
+I usually dismiss fan theories offhandedly,
+
+622
+00:48:38,480 --> 00:48:43,340
+as they typically require me to make far too many assumptions about things that aren't actually in the game,
+
+623
+00:48:43,820 --> 00:48:48,019
+or they disregard whole swaths of it entirely, which is just not very interesting to me.
+
+624
+00:48:49,079 --> 00:48:55,980
+I make an exception here because this theory actually fits in more details than the actual canonical English translation of this story.
+
+625
+00:48:57,039 --> 00:49:00,900
+Ultimecia does not get a lot of screen time in Final Fantasy VIII,
+
+626
+00:49:01,280 --> 00:49:04,300
+but you do actually learn about what she is attempting to accomplish.
+
+627
+00:49:05,260 --> 00:49:08,619
+She lives in a bleak, war-torn, and apocalyptic future,
+
+628
+00:49:09,260 --> 00:49:12,760
+and her goal is to complete something known as the Compression of Time.
+
+629
+00:49:13,679 --> 00:49:18,059
+It is explained that this would combine the past, present, and future into a theme.
+
+630
+00:49:19,320 --> 00:49:24,860
+The canonical reason for this is because Ultimecia is attempting to prevent her own downfall,
+
+631
+00:49:25,300 --> 00:49:29,300
+as there is a destiny about a legendary seed that will come to defeat her,
+
+632
+00:49:29,760 --> 00:49:34,440
+and so she seeks to prevent this fate from ever happening via a timeline loophole.
+
+633
+00:49:35,239 --> 00:49:37,920
+Unfortunately, that's all you really get with Ultimecia.
+
+634
+00:49:38,800 --> 00:49:43,380
+You can assume her controlling Edea was an attempt to have her destroy seed altogether,
+
+635
+00:49:44,199 --> 00:49:46,800
+but in the end she fails, and paradoxically,
+
+636
+00:49:47,199 --> 00:49:50,719
+she ends up traveling back to bestow her sorceress powers to her sorceress to her sorceress powers to Edea in
+
+637
+00:49:50,719 --> 00:49:54,039
+the past, setting off the events of the story to begin with.
+
+638
+00:49:55,440 --> 00:50:00,059
+It's explained that all sorceresses need to pass on their power before they can die,
+
+639
+00:50:00,840 --> 00:50:03,360
+and even if you take this statement at face value,
+
+640
+00:50:03,980 --> 00:50:08,960
+it was made clear earlier that only specific women can inherit the power of a sorceress.
+
+641
+00:50:09,920 --> 00:50:13,139
+If the big bad guy isn't Edea, or even Adele,
+
+642
+00:50:13,460 --> 00:50:18,119
+because they weren't around in the future, it stands to question, who the hell is Ultimecia?
+
+643
+00:50:18,480 --> 00:50:22,380
+Well, if you go through the game a second time,
+
+644
+00:50:22,679 --> 00:50:25,480
+with the idea that Rinoa might actually be Ultimecia,
+
+645
+00:50:25,980 --> 00:50:30,239
+certain details of the story start to line up which otherwise have no reason to be there.
+
+646
+00:50:31,900 --> 00:50:36,280
+So Squall wears this ring with a lion design on it, much like many of his accessories.
+
+647
+00:50:37,500 --> 00:50:43,519
+There is a point in the game in which Zell tricks Squall into giving him this ring because Rinoa asked him to.
+
+648
+00:50:44,280 --> 00:50:45,340
+She just seems to like the ring.
+
+649
+00:50:46,639 --> 00:50:49,639
+For whatever reason, during the middle of a pitched battle,
+
+650
+00:50:50,000 --> 00:50:53,900
+Rinoa gives the ring back to him and asks Squall if it has a name.
+
+651
+00:50:54,860 --> 00:50:57,360
+By default, this ring's name is Griever,
+
+652
+00:50:57,659 --> 00:51:00,699
+which Squall gives back to her and tells her that she can keep it.
+
+653
+00:51:01,860 --> 00:51:07,639
+Enter Ultimecia, who during her final battle decides to summon a guardian force of all things,
+
+654
+00:51:08,300 --> 00:51:13,039
+which doesn't really make a whole lot of sense to me as to why a sorceress would even need a
+
+655
+00:51:13,039 --> 00:51:15,440
+guardian force if they can use magic inherently.
+
+656
+00:51:16,280 --> 00:51:18,820
+They are the only humans that can do this in the lore,
+
+657
+00:51:19,239 --> 00:51:24,639
+so it seems very strange for the developers to add this detail into the final fight if it meant nothing.
+
+658
+00:51:25,440 --> 00:51:28,079
+But also, it clearly means something,
+
+659
+00:51:28,659 --> 00:51:34,820
+as the guardian force she summons is a lion creature that has the exact same name as whatever Squall decides
+
+660
+00:51:34,820 --> 00:51:37,400
+to name his ring, or Griever by default.
+
+661
+00:51:38,559 --> 00:51:43,199
+This is why this theory was born, as this whole thing begs further examination,
+
+662
+00:51:43,760 --> 00:51:46,920
+and writing it all off as a coincidence is almost silly.
+
+663
+00:51:47,840 --> 00:51:52,019
+There is a connection between Squall and Ultimecia, it's just not well explained.
+
+664
+00:51:53,159 --> 00:51:58,139
+The basic theory states this then, that if Ultimecia was using a guardian force,
+
+665
+00:51:58,659 --> 00:52:03,000
+would she not also be affected by the amnesia that affects everyone else who uses them?
+
+666
+00:52:03,920 --> 00:52:09,460
+If so, is it possible that Ultimecia forgot the real reason why she wanted to compress time,
+
+667
+00:52:09,940 --> 00:52:13,219
+confusing it with a paranoid destiny about her eventual destruction?
+
+668
+00:52:14,400 --> 00:52:16,909
+If you choose to believe that Rinoa is Ultimecia,
+
+669
+00:52:17,219 --> 00:52:21,420
+then you have a pretty good answer as to where she first heard about this destiny of hers,
+
+670
+00:52:21,739 --> 00:52:26,739
+as this was a nightmare that Rinoa described to Squall just before they set out on their final mission.
+
+671
+00:52:27,960 --> 00:52:31,260
+This turns Ultimecia into a very tragic figure,
+
+672
+00:52:31,900 --> 00:52:35,800
+a woman who inherited powers she didn't ask for and can't even control,
+
+673
+00:52:36,820 --> 00:52:39,739
+powers that are feared by every single person in the world.
+
+674
+00:52:40,900 --> 00:52:45,199
+If she used guardian forces, she would eventually forget what was important to her,
+
+675
+00:52:45,760 --> 00:52:48,559
+potentially even being forced to fight against her friends.
+
+676
+00:52:49,840 --> 00:52:52,719
+After years of fighting against the entire world,
+
+677
+00:52:53,360 --> 00:52:57,119
+all that she would have to remember those people by would be physical mementos,
+
+678
+00:52:57,820 --> 00:53:02,900
+small inconsequential things that no longer carried the greater context of why they mattered at all.
+
+679
+00:53:03,840 --> 00:53:06,900
+That could very well be her motivation to compress time.
+
+680
+00:53:07,760 --> 00:53:13,219
+It would allow her to escape her destroyed future and let her live in a single moment that she managed
+
+681
+00:53:13,219 --> 00:53:17,159
+to cling onto, a moment of greater significance than the rest.
+
+682
+00:53:18,320 --> 00:53:21,860
+While Rinoa would want to return to a world where Squall still existed,
+
+683
+00:53:22,480 --> 00:53:27,559
+Ultimecia would only remember the need to compress time into a single moment to escape her fate.
+
+684
+00:53:28,500 --> 00:53:31,460
+She cannot remember the motivation, just the ambition.
+
+685
+00:53:32,659 --> 00:53:37,800
+This consequently creates a reality in which she is slain by the very person she was attempting to see,
+
+686
+00:53:38,480 --> 00:53:41,840
+which might have actually been the ending she was looking for from the start.
+
+687
+00:53:42,860 --> 00:53:47,340
+Honestly, reading some of the dialogue near the end of the game makes this theory almost seem a little on
+
+688
+00:53:47,340 --> 00:53:51,139
+the nose, but I also realize that confirmation bias exists.
+
+689
+00:53:52,179 --> 00:53:57,320
+The canonical Ultimecia is the story of a woman who desperately wanted to change destiny,
+
+690
+00:53:57,840 --> 00:54:02,159
+only to paradoxically set forth a series of events that would eventually lead to that destiny.
+
+691
+00:54:03,460 --> 00:54:05,559
+It fits well within the themes of the game,
+
+692
+00:54:06,019 --> 00:54:08,760
+but I like the theory's version a lot better.
+
+693
+00:54:09,820 --> 00:54:13,019
+The game leaves off with the idea that love transcends all,
+
+694
+00:54:13,719 --> 00:54:20,400
+as it is heavily implied that Squall and Rinoa's promise to each other is what allows her to find and rescue Squall in the end.
+
+695
+00:54:21,539 --> 00:54:25,420
+The risk you take in loving someone is the grief you feel when you lose them,
+
+696
+00:54:25,960 --> 00:54:30,500
+and so a grief-stricken Rinoa, who has been transformed into a monster of sorts,
+
+697
+00:54:30,840 --> 00:54:33,119
+makes sense as the villain of this story.
+
+698
+00:54:34,639 --> 00:54:38,619
+I want to double down and state that I know that this isn't actually part of the game,
+
+699
+00:54:39,099 --> 00:54:43,480
+and that this theory was debunked by one of the writers slash director for the game.
+
+700
+00:54:44,179 --> 00:54:45,840
+However, I don't care.
+
+701
+00:54:46,840 --> 00:54:48,059
+Not to throw shade at the guy,
+
+702
+00:54:48,239 --> 00:54:52,090
+but if we took the writers' word as gospel when it came to their own creations,
+
+703
+00:54:52,860 --> 00:54:57,480
+then the wizards at Hogwarts would be shitting on the floor, or whatever other crazy shit that J.K.
+
+704
+00:54:57,619 --> 00:55:01,000
+Rowling has said, and Deckard from Blade Runner would be a replicant.
+
+705
+00:55:02,340 --> 00:55:06,800
+It's not the writer's job to tell you how to interpret a story after it has been released.
+
+706
+00:55:07,659 --> 00:55:10,019
+When you write your story to have a mystery,
+
+707
+00:55:10,300 --> 00:55:13,780
+or imply that there is greater depth to something even though there really isn't,
+
+708
+00:55:14,559 --> 00:55:18,730
+you allow for the person experiencing your story to fill in the blanks with their own interpretation,
+
+709
+00:55:19,380 --> 00:55:21,980
+who then creates a personal connection to your story.
+
+710
+00:55:23,179 --> 00:55:26,179
+A well-made book or game will contain many of these,
+
+711
+00:55:26,760 --> 00:55:32,019
+and it's why you see so many fan theories for well-liked franchises that have incredibly loyal fanbases.
+
+712
+00:55:32,739 --> 00:55:34,460
+Think Game of Thrones or Dark Souls.
+
+713
+00:55:35,679 --> 00:55:40,659
+In the same way that some people interpret Squall to be a brooding, over-emotional brat,
+
+714
+00:55:41,360 --> 00:55:44,659
+I see an introverted teenager with a lot on his mind.
+
+715
+00:55:45,360 --> 00:55:47,280
+Neither interpretation is incorrect.
+
+716
+00:55:48,780 --> 00:55:55,309
+To me, Rinoa is Ultimecia, because as a concept for a villain, I find her to be incredibly interesting,
+
+717
+00:55:55,880 --> 00:56:00,000
+and I would love for someone in the future to create a character based on that concept.
+
+718
+00:56:00,860 --> 00:56:04,179
+And so, despite the narrative, or even the game,
+
+719
+00:56:04,400 --> 00:56:08,409
+of Final Fantasy VIII not really being as tightly put together as some of its contemporaries,
+
+720
+00:56:09,380 --> 00:56:16,139
+there are still enough small details and moments of genuine quality in this game that help me to overlook some of its weaker elements.
+
+721
+00:56:16,780 --> 00:56:18,519
+And each time that I play this game,
+
+722
+00:56:18,760 --> 00:56:23,070
+I find myself discovering more things that I had somehow missed on previous playthroughs.
+
+723
+00:56:24,320 --> 00:56:25,579
+For those wondering, by the way,
+
+724
+00:56:25,840 --> 00:56:31,320
+there are mods out there that people have come up with that try to solve the gameplay and balance issues.
+
+725
+00:56:32,139 --> 00:56:36,820
+I myself have always thought about what I would do if given the chance to tweak the systems of the
+
+726
+00:56:36,820 --> 00:56:39,079
+game, or flesh out some of the ideas in the story.
+
+727
+00:56:40,099 --> 00:56:40,699
+But you know what?
+
+728
+00:56:41,400 --> 00:56:45,280
+For nostalgia's sake, even if given that opportunity, I would probably stick to the original.
+
+729
+00:56:47,750 --> 00:56:53,400
+Anyways, to quickly summarize, Final Fantasy VIII is better than VII because it has Laguna.
+
+730
+00:56:54,019 --> 00:56:54,400
+Bye-bye!
+
+731
+00:56:57,000 --> 00:57:02,539
+Alright, I hope you found at least some of what I talked about here to be interesting, entertaining,
+
+732
+00:57:02,760 --> 00:57:03,849
+or at the least informative.
+
+733
+00:57:05,239 --> 00:57:10,199
+My long-winded rant is officially over, and if you've managed to make it this far through the entire thing,
+
+734
+00:57:10,760 --> 00:57:12,099
+then I cannot thank you enough.
+
+735
+00:57:13,000 --> 00:57:14,280
+Please leave your comments or criticisms if you have any questions.
+
+736
+00:57:16,139 --> 00:57:20,400
+This was a very different type of video than what I was used to making,
+
+737
+00:57:20,679 --> 00:57:24,179
+and it is much more in line with me ranting and raving at my friends
+
+738
+00:57:24,599 --> 00:57:26,960
+about some obscure subject that they don't care about at all.
+
+739
+00:57:27,699 --> 00:57:30,400
+This really is the iconic Sean Cece rant.
+
+740
+00:57:31,500 --> 00:57:33,840
+I tried my best to make this a shorter video,
+
+741
+00:57:34,099 --> 00:57:39,739
+but after writing and rewriting it multiple times, it kept changing into something else entirely.
+
+742
+00:57:40,139 --> 00:57:43,280
+As it turns out, I had a lot more to say about Final Fantasy VIII than I thought I'd be doing.
+
+743
+00:57:45,579 --> 00:57:51,320
+I'm really scared that I might learn that maybe I'm just not capable of making shorter videos, but who knows.
+
+744
+00:57:52,619 --> 00:57:56,019
+Thank you again for watching, and there are more videos to come.
+
+745
+00:57:57,340 --> 00:57:58,079
+I love you.
+
+746
+00:57:59,179 --> 00:57:59,280
+Bye-bye!
+

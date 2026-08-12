@@ -1,0 +1,26 @@
+# Entornos virtuales
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache y compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Archivos de log y salida temporal
+*.log
+*.out
+uso.log
+nohup.out
+
+# IDEs y editores
+.claude/
+.vscode/
+.idea/
+*.swp
+
+# Archivos temporales o de prueba masivos (descomentar si no deseas subir los archivos .srt)
+# *.srt

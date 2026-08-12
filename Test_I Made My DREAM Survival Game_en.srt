@@ -1,0 +1,44 @@
+1
+00:00:00,160 --> 00:00:03,259
+Let's go back to December, where I showed off this version of Yellow Cake.
+
+2
+00:00:03,799 --> 00:00:07,700
+We have a bunker, but if you walk outside of it, there's really nothing to do,
+
+3
+00:00:08,000 --> 00:00:09,199
+except for maybe ride this bike.
+
+4
+00:00:09,740 --> 00:00:10,320
+Oh sh-!
+
+5
+00:00:11,000 --> 00:00:12,640
+There's two challenges to solve here.
+
+6
+00:00:12,839 --> 00:00:16,179
+We need a map to explore, and of course, some actual gameplay.
+
+7
+00:00:16,640 --> 00:00:19,280
+So I figured why not just do them both at the same time?
+
+8
+00:00:19,539 --> 00:00:22,320
+I started by making a laboratory and a baseball bat.
+
+9
+00:00:22,579 --> 00:00:26,199
+So if we go over here to my friend- F*** you, you f***ing b***h!
+
+10
+00:00:26,320 --> 00:00:31,179
+How'd you like that, mother- Yep, seems to be working fine.
+
+11
+00:00:32,259 --> 00:00:32,619
+Sorry bro.
+
