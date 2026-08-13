@@ -45,3 +45,10 @@ Inicia los servidores:
 nohup python3 server_separation.py > server_separation.log 2>&1 &
 nohup python3 server_translate.py > server_translate.log 2>&1 &
 ```
+
+## 🌐 Accesos Web
+
+Una vez iniciados los servidores, puedes acceder a cada interfaz en el navegador:
+
+- **Server Separation**: [http://localhost:3838](http://localhost:3838)
+- **Server Translate**: [http://localhost:8188](http://localhost:8188)
