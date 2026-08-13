@@ -1,10 +1,10 @@
 # Whisptest
 
-Este proyecto permite la transcripción y procesamiento de audio/subtítulos con Whisper y FastAPI.
+Este proyecto permite la transcripción, separación y traducción de subtítulos mediante Whisper, Demucs y Ollama local.
 
-## 🚀 Instalación rápida (Entorno Virtual)
+## 🚀 Instalación rápida (Entorno Virtual + Ollama)
 
-Para clonar el proyecto e instalar todas las dependencias en un solo comando:
+Para clonar el proyecto e instalar todas las dependencias y modelos en un solo comando:
 
 ```bash
 git clone git@github.com:fdrdm/whisptest.git
@@ -12,18 +12,36 @@ cd whisptest
 ./setup.sh
 ```
 
-El script `./setup.sh` creará automáticamente el entorno virtual (`.venv`) e instalará todas las librerías necesarias.
+El script `./setup.sh` se encargará de:
+1. Crear el entorno virtual (`.venv`).
+2. Instalar todas las librerías de Python desde `requirements.txt`.
+3. Verificar/Instalar Ollama y descargar los modelos locales necesarios (`translategemma:latest` y `translategemma:12b`).
 
-## 💡 Uso del entorno virtual
+## 🦙 Ollama Local
 
-Una vez finalizada la instalación, activa el entorno virtual ejecutando:
+El servidor de traducción utiliza Ollama en modo local (`http://localhost:11434/api/generate`). Asegúrate de tener Ollama corriendo antes de iniciar la traducción:
+
+```bash
+ollama serve
+```
+
+Y tener descargados los modelos:
+```bash
+ollama pull translategemma:latest
+ollama pull translategemma:12b
+```
+
+## 💡 Ejecutar los servidores
+
+Activa el entorno virtual:
 
 ```bash
 source .venv/bin/activate
 ```
 
-Para iniciar el servidor principal:
+Inicia los servidores:
 
 ```bash
-nohup python3 server_separation.py > server_separation.log 2>&1 & nohup python3 server_translate.py > server_translate.log 2>&1 &
+nohup python3 server_separation.py > server_separation.log 2>&1 &
+nohup python3 server_translate.py > server_translate.log 2>&1 &
 ```

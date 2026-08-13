@@ -59,7 +59,7 @@ def _estado_whisper():
         return '<div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:50%;background:#22c55e"></div> Whisper cargado en VRAM</div>'
     return '<div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:50%;background:#6b7280"></div> Whisper descargado (se carga al enviar trabajo)</div>'
 
-OLLAMA_URL = "https://ollama.fdrdm.com/api/generate"
+OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODELS = [
     "translategemma:latest",
     "translategemma:12b",

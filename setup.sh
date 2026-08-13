@@ -24,6 +24,25 @@ else
 fi
 
 echo "=========================================="
-echo "✅ ¡Entorno virtual preparado con éxito!"
-echo "💡 Para activarlo manualmente ejecuta: source .venv/bin/activate"
+echo "🦙 Verificando instalación de Ollama..."
+echo "=========================================="
+
+if ! command -v ollama &> /dev/null; then
+    echo "⚠️  Ollama no está instalado. Intentando instalar Ollama..."
+    curl -fsSL https://ollama.com/install.sh | sh || echo "⚠️ No se pudo instalar Ollama automáticamente. Por favor instálalo desde https://ollama.com"
+fi
+
+if command -v ollama &> /dev/null; then
+    echo "📥 Descargando modelos de Ollama necesarios (translategemma:latest y translategemma:12b)..."
+    ollama pull translategemma:latest || echo "⚠️ No se pudo descargar translategemma:latest. Asegúrate de que el servicio de Ollama esté ejecutándose."
+    ollama pull translategemma:12b || echo "⚠️ No se pudo descargar translategemma:12b. Asegúrate de que el servicio de Ollama esté ejecutándose."
+else
+    echo "⚠️ Recuerda instalar Ollama manualmente y descargar los modelos con:"
+    echo "   ollama pull translategemma:latest"
+    echo "   ollama pull translategemma:12b"
+fi
+
+echo "=========================================="
+echo "✅ ¡Entorno virtual y Ollama preparados con éxito!"
+echo "💡 Para activar el entorno manualmente ejecuta: source .venv/bin/activate"
 echo "=========================================="
