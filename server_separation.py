@@ -8,9 +8,17 @@ import gc
 import tempfile
 import subprocess
 import numpy as np
+import re
+from collections import defaultdict
+from datetime import datetime
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(BASE_DIR, "output_separation")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+LOG_FILE = os.path.join(BASE_DIR, "uso.log")
 
 logging.basicConfig(
-    filename="uso.log",
+    filename=LOG_FILE,
     format="%(asctime)s\t%(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     level=logging.INFO,
@@ -250,11 +258,10 @@ def separar(input_file, modelo_demucs_name, demucs_shifts, demucs_overlap,
 
     # 5. Exportar
     progress(0.92, desc="Exportando MP3...")
-    output_dir = tempfile.mkdtemp()
-    vocals_vad_mp3 = os.path.join(output_dir, f"{nombre_base}_voces_vad.mp3")
-    sfx_vad_mp3 = os.path.join(output_dir, f"{nombre_base}_musica_sfx_vad.mp3")
-    vocals_mp3 = os.path.join(output_dir, f"{nombre_base}_voces.mp3")
-    sfx_mp3 = os.path.join(output_dir, f"{nombre_base}_musica_sfx.mp3")
+    vocals_vad_mp3 = os.path.join(OUTPUT_DIR, f"{nombre_base}_voces_vad.mp3")
+    sfx_vad_mp3 = os.path.join(OUTPUT_DIR, f"{nombre_base}_musica_sfx_vad.mp3")
+    vocals_mp3 = os.path.join(OUTPUT_DIR, f"{nombre_base}_voces.mp3")
+    sfx_mp3 = os.path.join(OUTPUT_DIR, f"{nombre_base}_musica_sfx.mp3")
 
     tensor_a_mp3(vocals_vad, sr, vocals_vad_mp3)
     tensor_a_mp3(no_vocals_vad, sr, sfx_vad_mp3)
@@ -277,58 +284,301 @@ def separar(input_file, modelo_demucs_name, demucs_shifts, demucs_overlap,
     return vocals_vad_mp3, sfx_vad_mp3, vocals_mp3, sfx_mp3, estado
 
 
+def format_sec(sec):
+    m, s = divmod(int(sec), 60)
+    return f"{m}m {s}s" if m > 0 else f"{s}s"
+
+def format_size(bytes_size):
+    if bytes_size < 1024:
+        return f"{bytes_size} B"
+    elif bytes_size < 1024 * 1024:
+        return f"{bytes_size / 1024:.1f} KB"
+    else:
+        return f"{bytes_size / (1024 * 1024):.1f} MB"
+
+def obtener_tablas_log():
+    if not os.path.exists(LOG_FILE):
+        return [], []
+
+    entries = []
+    with open(LOG_FILE, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            # Filtrar registros a partir de septiembre 2026
+            if re.match(r"^2026-(09|1[0-2])", line):
+                parts = line.split("\t")
+                if len(parts) >= 2 and parts[1] in ["TRANSCRIPCION", "TRADUCCION", "SEPARACION"]:
+                    dt, action = parts[0], parts[1]
+                    filename = parts[2] if len(parts) > 2 else ""
+                    server = "Translate" if action in ["TRANSCRIPCION", "TRADUCCION"] else "Separation"
+
+                    audio_m = re.search(r"audio=(\d+)s", line)
+                    audio_s = int(audio_m.group(1)) if audio_m else 0
+
+                    proc_m = re.search(r"proceso=(\d+)s", line)
+                    proc_s = int(proc_m.group(1)) if proc_m else 0
+
+                    ip_m = re.search(r"ip=([^\s]+)", line)
+                    ip = ip_m.group(1) if ip_m else ""
+
+                    d_str, t_str = dt.split(" ", 1) if " " in dt else (dt, "")
+                    entries.append({
+                        "date": d_str,
+                        "time": t_str,
+                        "server": server,
+                        "action": action,
+                        "filename": filename,
+                        "audio_s": audio_s,
+                        "proc_s": proc_s,
+                        "ip": ip
+                    })
+
+    # Resumen diario agrupado
+    days = defaultdict(lambda: {"trans": 0, "trans_audio": 0, "sep": 0, "sep_audio": 0, "total_proc": 0})
+    for e in entries:
+        d = e["date"]
+        if e["server"] == "Translate":
+            days[d]["trans"] += 1
+            days[d]["trans_audio"] += e["audio_s"]
+        else:
+            days[d]["sep"] += 1
+            days[d]["sep_audio"] += e["audio_s"]
+        days[d]["total_proc"] += e["proc_s"]
+
+    resumen_data = []
+    tot_trans, tot_trans_aud, tot_sep, tot_sep_aud, tot_proc = 0, 0, 0, 0, 0
+    for d in sorted(days.keys()):
+        v = days[d]
+        tot_day = v["trans"] + v["sep"]
+        tot_aud = v["trans_audio"] + v["sep_audio"]
+        tot_trans += v["trans"]
+        tot_trans_aud += v["trans_audio"]
+        tot_sep += v["sep"]
+        tot_sep_aud += v["sep_audio"]
+        tot_proc += v["total_proc"]
+        resumen_data.append([
+            d,
+            v["trans"],
+            format_sec(v["trans_audio"]),
+            v["sep"],
+            format_sec(v["sep_audio"]),
+            tot_day,
+            format_sec(tot_aud),
+            format_sec(v["total_proc"])
+        ])
+
+    if resumen_data:
+        resumen_data.append([
+            "TOTAL",
+            tot_trans,
+            format_sec(tot_trans_aud),
+            tot_sep,
+            format_sec(tot_sep_aud),
+            tot_trans + tot_sep,
+            format_sec(tot_trans_aud + tot_sep_aud),
+            format_sec(tot_proc)
+        ])
+
+    # Detalle individual
+    detalle_data = []
+    for e in reversed(entries):
+        detalle_data.append([
+            e["date"],
+            e["time"],
+            e["server"],
+            e["action"],
+            e["filename"],
+            format_sec(e["audio_s"]),
+            f"{e['proc_s']}s",
+            e["ip"]
+        ])
+
+    return resumen_data, detalle_data
+
+def listar_archivos_output():
+    if not os.path.exists(OUTPUT_DIR):
+        return [], []
+    archivos = [f for f in os.listdir(OUTPUT_DIR) if os.path.isfile(os.path.join(OUTPUT_DIR, f))]
+    archivos.sort(key=lambda f: os.path.getmtime(os.path.join(OUTPUT_DIR, f)), reverse=True)
+    tabla = []
+    for f in archivos:
+        path = os.path.join(OUTPUT_DIR, f)
+        stat = os.stat(path)
+        mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        size = format_size(stat.st_size)
+        tabla.append([f, size, mtime])
+    return archivos, tabla
+
 # ===================== INTERFAZ =====================
 
 with gr.Blocks(title="Separacion de Audio") as demo:
-    gr.Markdown("# Separacion de Audio (Demucs + VAD)")
+    gr.Markdown("# Separacion de Audio (Demucs + VAD) 🎙️🎧")
     indicador_demucs = gr.HTML(value=_estado_demucs)
 
-    with gr.Row():
-        with gr.Column(scale=1):
-            input_file = gr.Video(label="Subi tu video o audio")
+    with gr.Tab("Separar Audio"):
+        with gr.Row():
+            with gr.Column(scale=1):
+                input_file = gr.File(
+                    label="Subí tu Video o Audio (.mp3, .wav, .m4a, .aac, .flac, .ogg, .mp4, .mkv, etc.)",
+                    file_types=[
+                        "video", "audio",
+                        ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".wma",
+                        ".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv"
+                    ],
+                    type="filepath",
+                )
 
-        with gr.Column(scale=1):
-            modelo_demucs = gr.Dropdown(
-                choices=["htdemucs_ft", "htdemucs", "mdx_extra"],
-                value="htdemucs_ft",
-                label="Modelo Demucs",
-                info="htdemucs_ft es el mas preciso, htdemucs es mas rapido",
+            with gr.Column(scale=1):
+                modelo_demucs = gr.Dropdown(
+                    choices=["htdemucs_ft", "htdemucs", "mdx_extra"],
+                    value="htdemucs_ft",
+                    label="Modelo Demucs",
+                    info="htdemucs_ft es el mas preciso, htdemucs es mas rapido",
+                )
+
+                vad_threshold = gr.Slider(0.1, 0.95, value=0.5, step=0.05,
+                                          label="VAD Threshold",
+                                          info="Bajo = agarra mas habla. Alto = mas estricto")
+
+                with gr.Accordion("Config Demucs", open=False):
+                    demucs_shifts = gr.Slider(0, 10, value=5, step=1,
+                                              label="Shifts",
+                                              info="Mas = mejor calidad pero mas lento. 0=rapido, 5=muy bueno")
+                    demucs_overlap = gr.Slider(0.0, 0.5, value=0.25, step=0.05,
+                                               label="Overlap",
+                                               info="Solapamiento interno de Demucs (0.25 = default)")
+
+        btn = gr.Button("Separar", variant="primary", size="lg")
+
+        gr.Markdown("### Con VAD (original donde no hay habla)")
+        with gr.Row():
+            out_voces_vad = gr.Audio(label="Habla VAD", type="filepath")
+            out_musica_vad = gr.Audio(label="SFX VAD", type="filepath")
+
+        gr.Markdown("### Sin VAD (Demucs puro)")
+        with gr.Row():
+            out_voces = gr.Audio(label="Habla", type="filepath")
+            out_musica = gr.Audio(label="SFX", type="filepath")
+
+        out_estado = gr.Textbox(label="Estado", interactive=False)
+
+        btn.click(
+            fn=separar,
+            inputs=[input_file, modelo_demucs, demucs_shifts, demucs_overlap, vad_threshold],
+            outputs=[out_voces_vad, out_musica_vad, out_voces, out_musica, out_estado],
+        )
+
+    with gr.Tab("Logs e Historial"):
+        gr.Markdown("## 📋 Logs de Uso y Descarga de Archivos")
+
+        gr.Markdown("### 📂 Archivos Generados (`output_separation`)")
+        gr.Markdown("Selecciona o reproduce cualquier archivo MP3 generado previamente:")
+
+        archivos_init, tabla_archivos_init = listar_archivos_output()
+        primer_archivo_path = os.path.join(OUTPUT_DIR, archivos_init[0]) if archivos_init else None
+
+        with gr.Row():
+            selector_archivo = gr.Dropdown(
+                choices=archivos_init,
+                value=archivos_init[0] if archivos_init else None,
+                label="Seleccionar archivo de audio",
+                scale=3,
+            )
+            btn_refrescar_archivos = gr.Button("🔄 Refrescar Archivos", scale=1)
+
+        with gr.Row():
+            file_descarga = gr.File(
+                label="Descargar archivo",
+                value=primer_archivo_path,
+                interactive=False,
+            )
+            audio_preview = gr.Audio(
+                label="Reproductor de Audio",
+                value=primer_archivo_path,
+                type="filepath",
+                interactive=False,
             )
 
-            vad_threshold = gr.Slider(0.1, 0.95, value=0.5, step=0.05,
-                                      label="VAD Threshold",
-                                      info="Bajo = agarra mas habla. Alto = mas estricto")
+        tabla_archivos = gr.Dataframe(
+            headers=["Nombre de Archivo", "Tamaño", "Fecha de Modificación"],
+            value=tabla_archivos_init,
+            interactive=False,
+            wrap=True,
+            max_height=250,
+            label="Archivos disponibles en output_separation (haz clic para seleccionarlo)",
+        )
 
-            with gr.Accordion("Config Demucs", open=False):
-                demucs_shifts = gr.Slider(0, 10, value=5, step=1,
-                                          label="Shifts",
-                                          info="Mas = mejor calidad pero mas lento. 0=rapido, 5=muy bueno")
-                demucs_overlap = gr.Slider(0.0, 0.5, value=0.25, step=0.05,
-                                           label="Overlap",
-                                           info="Solapamiento interno de Demucs (0.25 = default)")
+        def on_seleccionar_archivo(archivo=None):
+            if archivo:
+                path = os.path.join(OUTPUT_DIR, archivo)
+                if os.path.exists(path):
+                    return path, path
+            return None, None
 
-    btn = gr.Button("Separar", variant="primary", size="lg")
+        def on_refrescar_archivos():
+            archs, tbl = listar_archivos_output()
+            primer = os.path.join(OUTPUT_DIR, archs[0]) if archs else None
+            return gr.update(choices=archs, value=archs[0] if archs else None), tbl, primer, primer
 
-    gr.Markdown("### Con VAD (original donde no hay habla)")
-    with gr.Row():
-        out_voces_vad = gr.Audio(label="Habla VAD", type="filepath")
-        out_musica_vad = gr.Audio(label="SFX VAD", type="filepath")
+        def on_select_tabla(evt: gr.SelectData = None):
+            if evt is None:
+                return gr.update(), None, None
+            row_idx = evt.index[0]
+            archs, _ = listar_archivos_output()
+            if 0 <= row_idx < len(archs):
+                arch = archs[row_idx]
+                path = os.path.join(OUTPUT_DIR, arch)
+                return arch, path, path
+            return gr.update(), None, None
 
-    gr.Markdown("### Sin VAD (Demucs puro)")
-    with gr.Row():
-        out_voces = gr.Audio(label="Habla", type="filepath")
-        out_musica = gr.Audio(label="SFX", type="filepath")
+        selector_archivo.change(
+            fn=on_seleccionar_archivo,
+            inputs=[selector_archivo],
+            outputs=[file_descarga, audio_preview],
+        )
+        btn_refrescar_archivos.click(
+            fn=on_refrescar_archivos,
+            outputs=[selector_archivo, tabla_archivos, file_descarga, audio_preview],
+        )
+        tabla_archivos.select(
+            fn=on_select_tabla,
+            outputs=[selector_archivo, file_descarga, audio_preview],
+        )
 
-    out_estado = gr.Textbox(label="Estado", interactive=False)
+        gr.Markdown("---")
+        gr.Markdown("### 📊 Registro de Usos (Translate y Separation - desde Septiembre)")
 
-    btn.click(
-        fn=separar,
-        inputs=[input_file, modelo_demucs, demucs_shifts, demucs_overlap, vad_threshold],
-        outputs=[out_voces_vad, out_musica_vad, out_voces, out_musica, out_estado],
-    )
+        btn_refrescar_logs = gr.Button("🔄 Actualizar Tabla de Logs", variant="secondary")
+
+        resumen_init, detalle_init = obtener_tablas_log()
+
+        gr.Markdown("#### 📅 Resumen por Día")
+        tabla_resumen = gr.Dataframe(
+            headers=["Día", "Translate (Whisper)", "Audio Translate", "Separation (Demucs)", "Audio Separation", "Total Usos", "Audio Total", "Tiempo Proceso"],
+            value=resumen_init,
+            interactive=False,
+            wrap=True,
+            label="Resumen por Día",
+        )
+
+        gr.Markdown("#### 📝 Detalle de Operaciones")
+        tabla_detalle = gr.Dataframe(
+            headers=["Día", "Hora", "Servidor", "Operación", "Archivo / Tarea", "Duración Audio", "Tiempo Proceso", "IP"],
+            value=detalle_init,
+            interactive=False,
+            wrap=True,
+            max_height=400,
+            label="Detalle individual de operaciones",
+        )
+
+        btn_refrescar_logs.click(
+            fn=obtener_tablas_log,
+            outputs=[tabla_resumen, tabla_detalle],
+        )
 
     timer = gr.Timer(5)
     timer.tick(fn=_estado_demucs, outputs=[indicador_demucs])
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=3838)
+    from chunk_uploader import launch_server
+    launch_server(demo, port=3838, output_dir=OUTPUT_DIR)

@@ -24,3 +24,5 @@ nohup.out
 
 # Archivos temporales o de prueba masivos (descomentar si no deseas subir los archivos .srt)
 # *.srt
+output_translate/
+output_separation/

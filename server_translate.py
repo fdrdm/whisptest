@@ -8,9 +8,16 @@ import time
 import threading
 import torch
 import gc
+from collections import defaultdict
+from datetime import datetime
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(BASE_DIR, "output_translate")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+LOG_FILE = os.path.join(BASE_DIR, "uso.log")
 
 logging.basicConfig(
-    filename="uso.log",
+    filename=LOG_FILE,
     format="%(asctime)s\t%(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     level=logging.INFO,
@@ -111,7 +118,7 @@ def procesar(input_file, request: gr.Request, progress=gr.Progress(track_tqdm=Tr
     duracion_total = result.duration or 0
     idioma_detectado = result.language or "autodetectado"
     nombre_base = os.path.splitext(os.path.basename(input_file))[0]
-    path_srt = f"{nombre_base}_{idioma_detectado}.srt"
+    path_srt = os.path.join(OUTPUT_DIR, f"{nombre_base}_{idioma_detectado}.srt")
 
     # 2. Extraemos TODAS las palabras
     todas_las_palabras = []
@@ -339,9 +346,12 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
         for i, (numero, tiempo, _) in enumerate(lote):
             bloques_traducidos.append((numero, tiempo, traducciones[i]))
 
-    path_salida = archivo_srt.replace(".srt", f"_{target_code}.srt")
-    if path_salida == archivo_srt:
-        path_salida = archivo_srt.replace(".srt", "_traducido.srt")
+    nombre_base = os.path.splitext(nombre_srt)[0]
+    if nombre_base.endswith(f"_{source_code}"):
+        nombre_salida = f"{nombre_base[:-len(source_code)-1]}_{target_code}.srt"
+    else:
+        nombre_salida = f"{nombre_base}_{target_code}.srt"
+    path_salida = os.path.join(OUTPUT_DIR, nombre_salida)
 
     with open(path_salida, "w", encoding="utf-8") as f:
         for numero, tiempo, texto in bloques_traducidos:
@@ -353,14 +363,146 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
 
     return path_salida, f"Traducción completada: {total} bloques en {total_lotes} lotes ({source_lang} -> {target_lang})"
 
+def format_sec(sec):
+    m, s = divmod(int(sec), 60)
+    return f"{m}m {s}s" if m > 0 else f"{s}s"
+
+def format_size(bytes_size):
+    if bytes_size < 1024:
+        return f"{bytes_size} B"
+    elif bytes_size < 1024 * 1024:
+        return f"{bytes_size / 1024:.1f} KB"
+    else:
+        return f"{bytes_size / (1024 * 1024):.1f} MB"
+
+def obtener_tablas_log():
+    if not os.path.exists(LOG_FILE):
+        return [], []
+
+    entries = []
+    with open(LOG_FILE, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            # Filtrar registros a partir de septiembre 2026
+            if re.match(r"^2026-(09|1[0-2])", line):
+                parts = line.split("\t")
+                if len(parts) >= 2 and parts[1] in ["TRANSCRIPCION", "TRADUCCION", "SEPARACION"]:
+                    dt, action = parts[0], parts[1]
+                    filename = parts[2] if len(parts) > 2 else ""
+                    server = "Translate" if action in ["TRANSCRIPCION", "TRADUCCION"] else "Separation"
+
+                    audio_m = re.search(r"audio=(\d+)s", line)
+                    audio_s = int(audio_m.group(1)) if audio_m else 0
+
+                    proc_m = re.search(r"proceso=(\d+)s", line)
+                    proc_s = int(proc_m.group(1)) if proc_m else 0
+
+                    ip_m = re.search(r"ip=([^\s]+)", line)
+                    ip = ip_m.group(1) if ip_m else ""
+
+                    d_str, t_str = dt.split(" ", 1) if " " in dt else (dt, "")
+                    entries.append({
+                        "date": d_str,
+                        "time": t_str,
+                        "server": server,
+                        "action": action,
+                        "filename": filename,
+                        "audio_s": audio_s,
+                        "proc_s": proc_s,
+                        "ip": ip
+                    })
+
+    # Resumen diario agrupado
+    days = defaultdict(lambda: {"trans": 0, "trans_audio": 0, "sep": 0, "sep_audio": 0, "total_proc": 0})
+    for e in entries:
+        d = e["date"]
+        if e["server"] == "Translate":
+            days[d]["trans"] += 1
+            days[d]["trans_audio"] += e["audio_s"]
+        else:
+            days[d]["sep"] += 1
+            days[d]["sep_audio"] += e["audio_s"]
+        days[d]["total_proc"] += e["proc_s"]
+
+    resumen_data = []
+    tot_trans, tot_trans_aud, tot_sep, tot_sep_aud, tot_proc = 0, 0, 0, 0, 0
+    for d in sorted(days.keys()):
+        v = days[d]
+        tot_day = v["trans"] + v["sep"]
+        tot_aud = v["trans_audio"] + v["sep_audio"]
+        tot_trans += v["trans"]
+        tot_trans_aud += v["trans_audio"]
+        tot_sep += v["sep"]
+        tot_sep_aud += v["sep_audio"]
+        tot_proc += v["total_proc"]
+        resumen_data.append([
+            d,
+            v["trans"],
+            format_sec(v["trans_audio"]),
+            v["sep"],
+            format_sec(v["sep_audio"]),
+            tot_day,
+            format_sec(tot_aud),
+            format_sec(v["total_proc"])
+        ])
+
+    if resumen_data:
+        resumen_data.append([
+            "TOTAL",
+            tot_trans,
+            format_sec(tot_trans_aud),
+            tot_sep,
+            format_sec(tot_sep_aud),
+            tot_trans + tot_sep,
+            format_sec(tot_trans_aud + tot_sep_aud),
+            format_sec(tot_proc)
+        ])
+
+    # Detalle individual
+    detalle_data = []
+    for e in reversed(entries):
+        detalle_data.append([
+            e["date"],
+            e["time"],
+            e["server"],
+            e["action"],
+            e["filename"],
+            format_sec(e["audio_s"]),
+            f"{e['proc_s']}s",
+            e["ip"]
+        ])
+
+    return resumen_data, detalle_data
+
+def listar_archivos_output():
+    if not os.path.exists(OUTPUT_DIR):
+        return [], []
+    archivos = [f for f in os.listdir(OUTPUT_DIR) if os.path.isfile(os.path.join(OUTPUT_DIR, f))]
+    archivos.sort(key=lambda f: os.path.getmtime(os.path.join(OUTPUT_DIR, f)), reverse=True)
+    tabla = []
+    for f in archivos:
+        path = os.path.join(OUTPUT_DIR, f)
+        stat = os.stat(path)
+        mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        size = format_size(stat.st_size)
+        tabla.append([f, size, mtime])
+    return archivos, tabla
+
 # Interfaz de Gradio
 with gr.Blocks() as demo:
     gr.Markdown("# Generador de Subtítulos + Traducción 🎬🌐")
     indicador_whisper = gr.HTML(value=_estado_whisper)
 
     with gr.Tab("Transcribir"):
-        with gr.Row():
-            input_data = gr.Video(label="Subí tu Video o Audio", height=300)
+        input_data = gr.File(
+            label="Subí tu Video o Audio (.mp3, .wav, .m4a, .aac, .flac, .ogg, .mp4, .mkv, etc.)",
+            file_types=[
+                "video", "audio",
+                ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".wma",
+                ".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv"
+            ],
+            type="filepath",
+        )
 
         btn_transcribir = gr.Button("Generar SRT de Loops", variant="primary")
 
@@ -413,8 +555,111 @@ with gr.Blocks() as demo:
             outputs=[output_traducido, output_estado],
         )
 
+    with gr.Tab("Logs e Historial"):
+        gr.Markdown("## 📋 Logs de Uso y Descarga de Archivos")
+
+        gr.Markdown("### 📂 Archivos Generados (`output_translate`)")
+        gr.Markdown("Selecciona un archivo generado previamente para descargarlo:")
+
+        archivos_init, tabla_archivos_init = listar_archivos_output()
+        primer_archivo_path = os.path.join(OUTPUT_DIR, archivos_init[0]) if archivos_init else None
+
+        with gr.Row():
+            selector_archivo = gr.Dropdown(
+                choices=archivos_init,
+                value=archivos_init[0] if archivos_init else None,
+                label="Seleccionar archivo generado",
+                scale=3,
+            )
+            btn_refrescar_archivos = gr.Button("🔄 Refrescar Archivos", scale=1)
+
+        with gr.Row():
+            file_descarga = gr.File(
+                label="Descargar archivo",
+                value=primer_archivo_path,
+                interactive=False,
+            )
+
+        tabla_archivos = gr.Dataframe(
+            headers=["Nombre de Archivo", "Tamaño", "Fecha de Modificación"],
+            value=tabla_archivos_init,
+            interactive=False,
+            wrap=True,
+            max_height=250,
+            label="Archivos disponibles en output_translate (haz clic para seleccionarlo)",
+        )
+
+        def on_seleccionar_archivo(archivo=None):
+            if archivo:
+                path = os.path.join(OUTPUT_DIR, archivo)
+                if os.path.exists(path):
+                    return path
+            return None
+
+        def on_refrescar_archivos():
+            archs, tbl = listar_archivos_output()
+            primer = os.path.join(OUTPUT_DIR, archs[0]) if archs else None
+            return gr.update(choices=archs, value=archs[0] if archs else None), tbl, primer
+
+        def on_select_tabla(evt: gr.SelectData = None):
+            if evt is None:
+                return gr.update(), None
+            row_idx = evt.index[0]
+            archs, _ = listar_archivos_output()
+            if 0 <= row_idx < len(archs):
+                arch = archs[row_idx]
+                path = os.path.join(OUTPUT_DIR, arch)
+                return arch, path
+            return gr.update(), None
+
+        selector_archivo.change(
+            fn=on_seleccionar_archivo,
+            inputs=[selector_archivo],
+            outputs=[file_descarga],
+        )
+        btn_refrescar_archivos.click(
+            fn=on_refrescar_archivos,
+            outputs=[selector_archivo, tabla_archivos, file_descarga],
+        )
+        tabla_archivos.select(
+            fn=on_select_tabla,
+            outputs=[selector_archivo, file_descarga],
+        )
+
+        gr.Markdown("---")
+        gr.Markdown("### 📊 Registro de Usos (Translate y Separation - desde Septiembre)")
+
+        btn_refrescar_logs = gr.Button("🔄 Actualizar Tabla de Logs", variant="secondary")
+
+        resumen_init, detalle_init = obtener_tablas_log()
+
+        gr.Markdown("#### 📅 Resumen por Día")
+        tabla_resumen = gr.Dataframe(
+            headers=["Día", "Translate (Whisper)", "Audio Translate", "Separation (Demucs)", "Audio Separation", "Total Usos", "Audio Total", "Tiempo Proceso"],
+            value=resumen_init,
+            interactive=False,
+            wrap=True,
+            label="Resumen por Día",
+        )
+
+        gr.Markdown("#### 📝 Detalle de Operaciones")
+        tabla_detalle = gr.Dataframe(
+            headers=["Día", "Hora", "Servidor", "Operación", "Archivo / Tarea", "Duración Audio", "Tiempo Proceso", "IP"],
+            value=detalle_init,
+            interactive=False,
+            wrap=True,
+            max_height=400,
+            label="Detalle individual de operaciones",
+        )
+
+        btn_refrescar_logs.click(
+            fn=obtener_tablas_log,
+            outputs=[tabla_resumen, tabla_detalle],
+        )
+
     timer = gr.Timer(5)
     timer.tick(fn=_estado_whisper, outputs=[indicador_whisper])
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=8188)
+    from chunk_uploader import launch_server
+    launch_server(demo, port=8188, output_dir=OUTPUT_DIR)
