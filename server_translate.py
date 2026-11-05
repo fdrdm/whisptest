@@ -69,7 +69,6 @@ def _estado_whisper():
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODELS = [
     "translategemma:latest",
-    "translategemma:12b",
 ]
 
 PROMPT_TEMPLATE = """You are a professional {source_lang} ({source_code}) to {target_lang} ({target_code}) subtitle translator for subtitle blocks. Keep it informal, natural, and suitable for YouTube across LATAM avoiding regionalisms.

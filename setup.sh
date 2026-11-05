@@ -33,13 +33,11 @@ if ! command -v ollama &> /dev/null; then
 fi
 
 if command -v ollama &> /dev/null; then
-    echo "📥 Descargando modelos de Ollama necesarios (translategemma:latest y translategemma:12b)..."
+    echo "📥 Descargando modelos de Ollama necesarios (translategemma:latest)..."
     ollama pull translategemma:latest || echo "⚠️ No se pudo descargar translategemma:latest. Asegúrate de que el servicio de Ollama esté ejecutándose."
-    ollama pull translategemma:12b || echo "⚠️ No se pudo descargar translategemma:12b. Asegúrate de que el servicio de Ollama esté ejecutándose."
 else
     echo "⚠️ Recuerda instalar Ollama manualmente y descargar los modelos con:"
     echo "   ollama pull translategemma:latest"
-    echo "   ollama pull translategemma:12b"
 fi
 
 echo "=========================================="

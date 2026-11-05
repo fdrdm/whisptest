@@ -15,7 +15,7 @@ cd whisptest
 El script `./setup.sh` se encargará de:
 1. Crear el entorno virtual (`.venv`).
 2. Instalar todas las librerías de Python desde `requirements.txt`.
-3. Verificar/Instalar Ollama y descargar los modelos locales necesarios (`translategemma:latest` y `translategemma:12b`).
+3. Verificar/Instalar Ollama y descargar los modelos locales necesarios (`translategemma:latest`).
 
 ## 🦙 Ollama Local
 
@@ -28,7 +28,6 @@ ollama serve
 Y tener descargados los modelos:
 ```bash
 ollama pull translategemma:latest
-ollama pull translategemma:12b
 ```
 
 ## 💡 Ejecutar los servidores
