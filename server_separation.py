@@ -8,7 +8,6 @@ import gc
 import tempfile
 import subprocess
 import numpy as np
-from datetime import datetime
 
 import cola
 import gpu
@@ -281,28 +280,6 @@ def separar_en_cola(input_file, modelo_demucs_name, demucs_shifts, demucs_overla
     return cola.esperar(t, progress)
 
 
-def format_size(bytes_size):
-    if bytes_size < 1024:
-        return f"{bytes_size} B"
-    elif bytes_size < 1024 * 1024:
-        return f"{bytes_size / 1024:.1f} KB"
-    else:
-        return f"{bytes_size / (1024 * 1024):.1f} MB"
-
-def listar_archivos_output():
-    if not os.path.exists(OUTPUT_DIR):
-        return [], []
-    archivos = [f for f in os.listdir(OUTPUT_DIR) if os.path.isfile(os.path.join(OUTPUT_DIR, f))]
-    archivos.sort(key=lambda f: os.path.getmtime(os.path.join(OUTPUT_DIR, f)), reverse=True)
-    tabla = []
-    for f in archivos:
-        path = os.path.join(OUTPUT_DIR, f)
-        stat = os.stat(path)
-        mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-        size = format_size(stat.st_size)
-        tabla.append([f, size, mtime])
-    return archivos, tabla
-
 # ===================== INTERFAZ =====================
 # app.py arma la página unificada con estas piezas.
 
@@ -360,79 +337,3 @@ def build_tabs():
             outputs=[out_voces_vad, out_musica_vad, out_voces, out_musica, out_estado],
             concurrency_limit=None,  # la GPU la serializa cola.py
         )
-
-
-def build_archivos():
-    gr.Markdown("### 🎧 Audios separados (`output_separation`)")
-    gr.Markdown("Selecciona o reproduce cualquier archivo MP3 generado previamente:")
-
-    archivos_init, tabla_archivos_init = listar_archivos_output()
-    primer_archivo_path = os.path.join(OUTPUT_DIR, archivos_init[0]) if archivos_init else None
-
-    with gr.Row():
-        selector_archivo = gr.Dropdown(
-            choices=archivos_init,
-            value=archivos_init[0] if archivos_init else None,
-            label="Seleccionar archivo de audio",
-            scale=3,
-        )
-        btn_refrescar_archivos = gr.Button("🔄 Refrescar Archivos", scale=1)
-
-    with gr.Row():
-        file_descarga = gr.File(
-            label="Descargar archivo",
-            value=primer_archivo_path,
-            interactive=False,
-        )
-        audio_preview = gr.Audio(
-            label="Reproductor de Audio",
-            value=primer_archivo_path,
-            type="filepath",
-            interactive=False,
-        )
-
-    tabla_archivos = gr.Dataframe(
-        headers=["Nombre de Archivo", "Tamaño", "Fecha de Modificación"],
-        value=tabla_archivos_init,
-        interactive=False,
-        wrap=True,
-        max_height=250,
-        label="Archivos disponibles en output_separation (haz clic para seleccionarlo)",
-    )
-
-    def on_seleccionar_archivo(archivo=None):
-        if archivo:
-            path = os.path.join(OUTPUT_DIR, archivo)
-            if os.path.exists(path):
-                return path, path
-        return None, None
-
-    def on_refrescar_archivos():
-        archs, tbl = listar_archivos_output()
-        primer = os.path.join(OUTPUT_DIR, archs[0]) if archs else None
-        return gr.update(choices=archs, value=archs[0] if archs else None), tbl, primer, primer
-
-    def on_select_tabla(evt: gr.SelectData = None):
-        if evt is None:
-            return gr.update(), None, None
-        row_idx = evt.index[0]
-        archs, _ = listar_archivos_output()
-        if 0 <= row_idx < len(archs):
-            arch = archs[row_idx]
-            path = os.path.join(OUTPUT_DIR, arch)
-            return arch, path, path
-        return gr.update(), None, None
-
-    selector_archivo.change(
-        fn=on_seleccionar_archivo,
-        inputs=[selector_archivo],
-        outputs=[file_descarga, audio_preview],
-    )
-    btn_refrescar_archivos.click(
-        fn=on_refrescar_archivos,
-        outputs=[selector_archivo, tabla_archivos, file_descarga, audio_preview],
-    )
-    tabla_archivos.select(
-        fn=on_select_tabla,
-        outputs=[selector_archivo, file_descarga, audio_preview],
-    )

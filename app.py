@@ -5,6 +5,7 @@ gpu.py, que limita la VRAM de la app (WHISPTEST_VRAM_GB, 5 GB por defecto).
 """
 import gradio as gr
 
+import archivos
 import cola
 import gpu
 import server_separation
@@ -23,13 +24,8 @@ with gr.Blocks(title="IA fdrdm") as demo:
     server_translate.build_tabs()
     server_separation.build_tabs()
     cola.build_tab()
-
-    with gr.Tab("Archivos e Historial"):
-        server_translate.build_archivos()
-        gr.Markdown("---")
-        server_separation.build_archivos()
-        gr.Markdown("---")
-        server_translate.build_historial()
+    archivos.build_archivos()
+    archivos.build_historial()
 
     timer = gr.Timer(5)
     timer.tick(fn=estado, outputs=[indicador_gpu])
