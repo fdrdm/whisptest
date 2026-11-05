@@ -36,13 +36,11 @@ from demucs.pretrained import get_model
 from demucs.apply import apply_model
 import threading
 
-# Demucs lazy loading con auto-descarga a los 15 min
+# Demucs se carga por trabajo; gpu.trabajo() lo descarga al terminar (carga en ~2 s)
 _demucs_models = {}
 _demucs_lock = threading.Lock()
-_demucs_timer = None
-UNLOAD_TIMEOUT = 15 * 60
 
-def _unload_demucs(motivo="por inactividad"):
+def _unload_demucs():
     global _demucs_models
     with _demucs_lock:
         if _demucs_models:
@@ -51,14 +49,10 @@ def _unload_demucs(motivo="por inactividad"):
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            logging.info(f"MODELO\tdemucs {', '.join(nombres)} descargado {motivo}")
+            logging.info(f"MODELO\tdemucs {', '.join(nombres)} descargado")
 
 def get_demucs_model(name):
-    global _demucs_timer
     with _demucs_lock:
-        if _demucs_timer:
-            _demucs_timer.cancel()
-            _demucs_timer = None
         if name not in _demucs_models:
             # Un solo modelo Demucs en VRAM a la vez
             for otro in list(_demucs_models):
@@ -73,16 +67,7 @@ def get_demucs_model(name):
             logging.info(f"MODELO\tdemucs {name} cargado")
         return _demucs_models[name]
 
-def _schedule_demucs_unload():
-    global _demucs_timer
-    with _demucs_lock:
-        if _demucs_timer:
-            _demucs_timer.cancel()
-        _demucs_timer = threading.Timer(UNLOAD_TIMEOUT, _unload_demucs)
-        _demucs_timer.daemon = True
-        _demucs_timer.start()
-
-gpu.registrar("demucs", lambda: _unload_demucs("para liberar VRAM"), lambda: bool(_demucs_models))
+gpu.registrar("demucs", _unload_demucs, lambda: bool(_demucs_models))
 
 
 def tensor_a_mp3(tensor, sr, path):
@@ -283,7 +268,6 @@ def separar(input_file, modelo_demucs_name, demucs_shifts, demucs_overlap,
     progress(1.0, desc="Listo!")
     estado = f"Listo en {duracion_proceso:.0f}s | Audio: {duracion_audio/60:.1f} min | {modelo_demucs_name} shifts={int(demucs_shifts)} | {len(timestamps)} segmentos de habla"
 
-    _schedule_demucs_unload()
     return vocals_vad_mp3, sfx_vad_mp3, vocals_mp3, sfx_mp3, estado
 
 

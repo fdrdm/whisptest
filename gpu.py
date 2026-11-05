@@ -2,7 +2,8 @@
 
 Todo corre en un solo proceso con una única cola de GPU (concurrency_id="gpu"),
 así que nunca hay dos trabajos a la vez. Además:
-- queda un solo modelo propio en VRAM: antes de cargar uno se descargan los demás;
+- los modelos propios se cargan por trabajo y se descargan apenas termina
+  (cargan en segundos, no vale la pena dejarlos ocupando VRAM);
 - PyTorch queda limitado a VRAM_LIMIT_GB para no dejar sin memoria al
   escritorio, a Chrome ni a Ollama;
 - antes de empezar se verifica que haya VRAM libre suficiente.
@@ -101,11 +102,12 @@ def trabajo(nombre):
     try:
         yield
     except torch.cuda.OutOfMemoryError:
-        _liberar_propios()
         raise gr.Error(
             f"{nombre} superó el límite de {VRAM_LIMIT_GB:g} GB de VRAM de la app. "
             "Probá con menos shifts o un archivo más corto."
         )
+    finally:
+        _liberar_propios()
 
 
 def pico_gb():

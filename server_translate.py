@@ -25,13 +25,11 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-# Whisper lazy loading con auto-descarga a los 15 min
+# Whisper se carga por trabajo; gpu.trabajo() lo descarga al terminar (carga en ~10 s)
 _whisper_model = None
 _whisper_lock = threading.Lock()
-_whisper_timer = None
-UNLOAD_TIMEOUT = 15 * 60
 
-def _unload_whisper(motivo="por inactividad"):
+def _unload_whisper():
     global _whisper_model
     with _whisper_lock:
         if _whisper_model is not None:
@@ -40,30 +38,18 @@ def _unload_whisper(motivo="por inactividad"):
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            logging.info(f"MODELO\twhisper turbo descargado {motivo}")
+            logging.info("MODELO\twhisper turbo descargado")
 
 def _get_whisper():
-    global _whisper_model, _whisper_timer
+    global _whisper_model
     with _whisper_lock:
-        if _whisper_timer:
-            _whisper_timer.cancel()
-            _whisper_timer = None
         if _whisper_model is None:
             logging.info("MODELO\tcargando whisper turbo...")
             _whisper_model = stable_whisper.load_model('turbo')
             logging.info("MODELO\twhisper turbo cargado")
         return _whisper_model
 
-def _schedule_whisper_unload():
-    global _whisper_timer
-    with _whisper_lock:
-        if _whisper_timer:
-            _whisper_timer.cancel()
-        _whisper_timer = threading.Timer(UNLOAD_TIMEOUT, _unload_whisper)
-        _whisper_timer.daemon = True
-        _whisper_timer.start()
-
-gpu.registrar("whisper", lambda: _unload_whisper("para liberar VRAM"), lambda: _whisper_model is not None)
+gpu.registrar("whisper", _unload_whisper, lambda: _whisper_model is not None)
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODELS = [
@@ -252,7 +238,6 @@ def procesar(input_file, request: gr.Request, progress=gr.Progress(track_tqdm=Tr
             f.write(f"{inicio_srt} --> {fin_srt}\n")
             f.write(f"{texto_loop}\n\n")
 
-    _schedule_whisper_unload()
     return path_srt
 
 def parsear_srt(contenido_srt):
