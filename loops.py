@@ -3,6 +3,7 @@
 Las palabras de cada transcripción se guardan en JSON (output_translate/palabras/),
 así los loops se pueden rearmar con otros ajustes sin volver a transcribir.
 """
+import re
 from dataclasses import dataclass
 
 
@@ -140,3 +141,25 @@ def escribir_srt(loops, path):
             f.write(f"{i + 1}\n")
             f.write(f"{segundos_a_srt(loop[0].start)} --> {segundos_a_srt(loop[-1].end)}\n")
             f.write(f"{''.join(w.word for w in loop).strip()}\n\n")
+
+
+def _a_segundos(t):
+    h, m, s = t.strip().replace(",", ".").split(":")
+    return int(h) * 3600 + int(m) * 60 + float(s)
+
+
+def resumen_srt(texto):
+    """Una línea con cuántos loops hay y qué tan largos son."""
+    duraciones, palabras = [], []
+    for bloque in re.split(r"\n\s*\n", texto.strip()):
+        lineas = bloque.splitlines()
+        if len(lineas) >= 3 and "-->" in lineas[1]:
+            inicio, fin = lineas[1].split("-->")
+            duraciones.append(_a_segundos(fin) - _a_segundos(inicio))
+            palabras.append(len(" ".join(lineas[2:]).split()))
+    if not duraciones:
+        return "El SRT está vacío."
+    n = len(duraciones)
+    coma = lambda x: f"{x:.1f}".replace(".", ",")
+    return (f"**{n} loops** · promedio {coma(sum(palabras) / n)} palabras y {coma(sum(duraciones) / n)} s · "
+            f"el más largo {coma(max(duraciones))} s · el de más palabras {max(palabras)}")

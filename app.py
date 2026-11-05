@@ -21,7 +21,7 @@ with gr.Blocks(title="IA fdrdm") as demo:
     gr.Markdown("# Subtítulos, Traducción y Separación de Audio 🎬🌐🎧")
     indicador_gpu = gr.HTML(value=estado)
 
-    server_translate.build_tabs()
+    server_translate.build_tabs(demo)
     server_separation.build_tabs()
     cola.build_tab()
     archivos.build_archivos()

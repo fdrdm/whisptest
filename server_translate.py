@@ -88,7 +88,7 @@ def palabras_json(path_srt):
     nombre = os.path.splitext(os.path.basename(path_srt))[0] + ".json"
     return os.path.join(OUTPUT_DIR, "palabras", nombre)
 
-def procesar(input_file, *, ip, progress):
+def procesar(input_file, ajustes=None, *, ip, progress):
     if not input_file:
         return None
 
@@ -112,7 +112,7 @@ def procesar(input_file, *, ip, progress):
 
     # 3. Armado de loops (loops.py)
     todas_las_palabras = [word for segment in result.segments for word in segment.words]
-    lista_loops = loops.armar(todas_las_palabras)
+    lista_loops = loops.armar(todas_las_palabras, ajustes)
 
     # Log
     duracion_habla = lista_loops[-1][-1].end if lista_loops else 0
@@ -236,11 +236,70 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
 
     return path_salida, f"Traducción completada: {total} bloques en {total_lotes} lotes ({source_lang} -> {target_lang})"
 
-def procesar_en_cola(input_file, request: gr.Request, progress=gr.Progress()):
+def procesar_en_cola(input_file, max_palabras, max_segundos, min_palabras, pausa_suave,
+                     request: gr.Request, progress=gr.Progress()):
     if not input_file:
         return None
-    t = cola.encolar("Transcribir", os.path.basename(input_file), procesar, (input_file,), cola.ip(request))
+    ajustes = _ajustes(max_palabras, max_segundos, min_palabras, pausa_suave)
+    t = cola.encolar("Transcribir", os.path.basename(input_file), procesar, (input_file, ajustes), cola.ip(request))
     return cola.esperar(t, progress)
+
+# ===================== REARMAR LOOPS =====================
+# No pasa por la cola: no usa GPU y tarda milisegundos.
+
+AJUSTES_DEF = loops.Ajustes()
+
+def _ajustes(max_palabras, max_segundos, min_palabras, pausa_suave):
+    return loops.Ajustes(max_palabras=int(max_palabras), max_segundos=float(max_segundos),
+                         min_palabras=int(min_palabras), pausa_suave=float(pausa_suave))
+
+def transcripciones():
+    """SRT que se pueden rearmar (tienen sus palabras guardadas), el más nuevo primero."""
+    carpeta = os.path.join(OUTPUT_DIR, "palabras")
+    if not os.path.isdir(carpeta):
+        return []
+    jsons = [f for f in os.listdir(carpeta) if f.endswith(".json")]
+    jsons.sort(key=lambda f: os.path.getmtime(os.path.join(carpeta, f)), reverse=True)
+    return [f[:-len(".json")] + ".srt" for f in jsons]
+
+def _traducciones(nombre_srt):
+    """Otros SRT del mismo video: traducciones hechas con los loops anteriores."""
+    idioma = r"_[A-Za-z]{2,3}(?:-[A-Za-z]{2})?\.srt"
+    m = re.fullmatch(r"(.*)" + idioma, nombre_srt)
+    if not m:
+        return []
+    patron = re.escape(m.group(1)) + idioma
+    return sorted(f for f in os.listdir(OUTPUT_DIR) if f != nombre_srt and re.fullmatch(patron, f))
+
+def mostrar_srt(nombre_srt, aviso=""):
+    """(archivo, resumen, texto) del SRT elegido."""
+    path = os.path.join(OUTPUT_DIR, nombre_srt) if nombre_srt else None
+    if not path or not os.path.exists(path):
+        return None, "", ""
+    with open(path, encoding="utf-8") as f:
+        texto = f.read()
+    return path, aviso + loops.resumen_srt(texto), texto
+
+def rearmar(nombre_srt, max_palabras, max_segundos, min_palabras, pausa_suave, request: gr.Request):
+    if not nombre_srt:
+        raise gr.Error("Elegí una transcripción.")
+    path_palabras = palabras_json(nombre_srt)
+    if not os.path.exists(path_palabras):
+        raise gr.Error("Esa transcripción no tiene las palabras guardadas: volvé a transcribir el video.")
+    t0 = time.time()
+    resultado = stable_whisper.WhisperResult(path_palabras)
+    ajustes = _ajustes(max_palabras, max_segundos, min_palabras, pausa_suave)
+    lista_loops = loops.armar([w for s in resultado.segments for w in s.words], ajustes)
+    loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, nombre_srt))
+    logging.info(
+        f"REARMADO\t{nombre_srt}\tloops={len(lista_loops)}\tmax_palabras={ajustes.max_palabras}\t"
+        f"max_segundos={ajustes.max_segundos:g}\tmin_palabras={ajustes.min_palabras}\t"
+        f"pausa_suave={ajustes.pausa_suave:g}\tproceso={time.time() - t0:.1f}s\tip={cola.ip(request)}"
+    )
+    otros = _traducciones(nombre_srt)
+    aviso = (f"⚠️ Ojo: {', '.join(otros)} se hizo con los loops anteriores, volvé a traducirlo.\n\n"
+             if otros else "")
+    return mostrar_srt(nombre_srt, aviso)
 
 def traducir_en_cola(archivo_srt, idioma_origen, idioma_destino, instrucciones, modelo, request: gr.Request, progress=gr.Progress()):
     if not archivo_srt:
@@ -252,8 +311,8 @@ def traducir_en_cola(archivo_srt, idioma_origen, idioma_destino, instrucciones, 
 # ===================== INTERFAZ =====================
 # app.py arma la página unificada con estas piezas.
 
-def build_tabs():
-    with gr.Tab("Transcribir"):
+def build_tabs(demo):
+    with gr.Tab("Transcribir") as tab_transcribir:
         input_data = gr.File(
             label="Subí tu Video o Audio (.mp3, .wav, .m4a, .aac, .flac, .ogg, .mp4, .mkv, etc.)",
             file_types=[
@@ -264,17 +323,53 @@ def build_tabs():
             type="filepath",
         )
 
+        d = AJUSTES_DEF
+        with gr.Accordion("Ajustes de loops", open=False):
+            with gr.Row():
+                max_palabras = gr.Slider(5, 40, value=d.max_palabras, step=1, label="Máximo de palabras",
+                                         info=f"Puede pasarse hasta {d.tolerancia_adelante} para cerrar la oración. Por defecto: {d.max_palabras}")
+                max_segundos = gr.Slider(3, 30, value=d.max_segundos, step=0.5, label="Máximo de segundos",
+                                         info=f"Puede pasarse un poco para cerrar la oración. Por defecto: {d.max_segundos:g}")
+            with gr.Row():
+                min_palabras = gr.Slider(1, 10, value=d.min_palabras, step=1, label="Mínimo para cortar",
+                                         info=f"Palabras mínimas para cortar en un punto. Por defecto: {d.min_palabras}")
+                pausa_suave = gr.Slider(0, 1, value=d.pausa_suave, step=0.05, label="Pausa para corte suave (s)",
+                                        info=f'Silencio mínimo para cortar antes de "and", "but", "with"... '
+                                             f'Por defecto: {str(d.pausa_suave).replace(".", ",")}')
+            btn_por_defecto = gr.Button("Volver a los valores por defecto", size="sm", variant="secondary")
+        ajustes = [max_palabras, max_segundos, min_palabras, pausa_suave]
+        valores_def = [d.max_palabras, d.max_segundos, d.min_palabras, d.pausa_suave]
+        # Cada persona ve los últimos ajustes que usó (se guardan en su navegador)
+        ajustes_guardados = gr.BrowserState(valores_def, storage_key="whisptest_ajustes_loops")
+
         btn_transcribir = gr.Button("Generar SRT de Loops", variant="primary")
 
+        gr.Markdown("### Resultado")
         with gr.Row():
-            output_srt = gr.File(label="Archivo SRT")
+            elegido = gr.Dropdown(choices=transcripciones(), value=None, label="Transcripción",
+                                  info="La que acabás de hacer, o cualquier anterior", scale=3)
+            btn_rearmar = gr.Button("Rearmar con estos ajustes", scale=1)
+        resumen = gr.Markdown()
+        vista = gr.Textbox(label="Vista previa", lines=10, max_lines=10, interactive=False, buttons=["copy"])
+        output_srt = gr.File(label="Archivo SRT", interactive=False)
+
+        def al_terminar(path):
+            nombre = os.path.basename(path) if path else None
+            return gr.update(choices=transcripciones(), value=nombre), *mostrar_srt(nombre)[1:]
 
         btn_transcribir.click(
             fn=procesar_en_cola,
-            inputs=[input_data],
+            inputs=[input_data, *ajustes],
             outputs=[output_srt],
             concurrency_limit=None,  # la GPU la serializa cola.py
-        )
+        ).success(al_terminar, output_srt, [elegido, resumen, vista])
+        btn_rearmar.click(rearmar, [elegido, *ajustes], [output_srt, resumen, vista])
+        elegido.input(mostrar_srt, elegido, [output_srt, resumen, vista])
+        tab_transcribir.select(lambda: gr.update(choices=transcripciones()), None, elegido, show_progress="hidden")
+        btn_por_defecto.click(lambda: valores_def, None, ajustes)
+        demo.load(lambda guardados: list(guardados), ajustes_guardados, ajustes)
+        gr.on([a.change for a in ajustes], lambda *valores: list(valores), ajustes, ajustes_guardados,
+              show_progress="hidden")
 
     with gr.Tab("Traducir SRT"):
         with gr.Row():
