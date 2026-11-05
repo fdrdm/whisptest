@@ -135,12 +135,51 @@ def segundos_a_srt(segundos):
     return f"{h:02}:{m:02}:{s:02},{ms:03}"
 
 
-def escribir_srt(loops, path):
+def armar_por_hablante(palabras, hablantes, aj=None):
+    """Como armar(), pero un loop nunca mezcla hablantes. Devuelve [(hablante, loop)]."""
+    resultado, tramo, actual = [], [], None
+    for w, h in zip(palabras, hablantes):
+        if tramo and h != actual:
+            resultado += [(actual, loop) for loop in armar(tramo, aj)]
+            tramo = []
+        tramo.append(w)
+        actual = h
+    if tramo:
+        resultado += [(actual, loop) for loop in armar(tramo, aj)]
+    return resultado
+
+
+PAUSA_NOMBRE = 2.0  # segundos: tras una pausa así se repite el nombre aunque hable el mismo
+
+
+def nombres_por_loop(con_hablante, nombres):
+    """Prefijo "Nombre" de cada loop: cuando cambia el hablante o después de una pausa larga.
+
+    nombres: {hablante: nombre}; los que no tienen nombre salen como "Hablante N".
+    Si hay un solo hablante y no tiene nombre, no se pone ninguno.
+    """
+    distintos = {h for h, _ in con_hablante}
+    if len(distintos) <= 1 and not any(nombres.get(h) for h in distintos):
+        return [None] * len(con_hablante)
+    prefijos, anterior, fin_anterior = [], None, None
+    for h, loop in con_hablante:
+        if h != anterior or loop[0].start - fin_anterior > PAUSA_NOMBRE:
+            prefijos.append(nombres.get(h) or f"Hablante {h[1:]}")
+        else:
+            prefijos.append(None)
+        anterior, fin_anterior = h, loop[-1].end
+    return prefijos
+
+
+def escribir_srt(loops, path, prefijos=None):
     with open(path, "w", encoding="utf-8") as f:
         for i, loop in enumerate(loops):
+            texto = "".join(w.word for w in loop).strip()
+            if prefijos and prefijos[i]:
+                texto = f"{prefijos[i]}: {texto}"
             f.write(f"{i + 1}\n")
             f.write(f"{segundos_a_srt(loop[0].start)} --> {segundos_a_srt(loop[-1].end)}\n")
-            f.write(f"{''.join(w.word for w in loop).strip()}\n\n")
+            f.write(f"{texto}\n\n")
 
 
 def _a_segundos(t):

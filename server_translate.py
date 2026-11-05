@@ -1,5 +1,6 @@
 import gradio as gr
 import stable_whisper
+import whisper
 import requests
 import re
 import os
@@ -11,6 +12,7 @@ import gc
 
 import cola
 import gpu
+import hablantes
 import loops
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -88,18 +90,22 @@ def palabras_json(path_srt):
     nombre = os.path.splitext(os.path.basename(path_srt))[0] + ".json"
     return os.path.join(OUTPUT_DIR, "palabras", nombre)
 
-def procesar(input_file, ajustes=None, *, ip, progress):
+def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, *, ip, progress):
     if not input_file:
         return None
 
     # 1. Transcripción cruda (Gradio captura la barra de tqdm de Whisper)
     t0 = time.time()
+    parte_whisper = 0.8 if identificar else 1.0
     with gpu.trabajo("whisper"):
         model = _get_whisper()
         result = model.transcribe(
             input_file,
-            progress_callback=lambda hecho, total: progress(hecho / total if total else 0, desc="Transcribiendo..."),
+            progress_callback=lambda hecho, total: progress(parte_whisper * hecho / total if total else 0,
+                                                            desc="Transcribiendo..."),
         )
+        del model  # que gpu.trabajo pueda liberarlo antes de pyannote
+    vram_pico = gpu.pico_gb()
     duracion_total = result.duration or 0
     idioma_detectado = result.language or "autodetectado"
     nombre_base = os.path.splitext(os.path.basename(input_file))[0]
@@ -110,19 +116,49 @@ def procesar(input_file, ajustes=None, *, ip, progress):
     os.makedirs(os.path.dirname(path_palabras), exist_ok=True)
     result.save_as_json(path_palabras)
 
-    # 3. Armado de loops (loops.py)
     todas_las_palabras = [word for segment in result.segments for word in segment.words]
-    lista_loops = loops.armar(todas_las_palabras, ajustes)
+
+    # 3. Quién habla cada palabra (hablantes.py)
+    path_hablantes = hablantes_json(path_srt)
+    if os.path.exists(path_hablantes):
+        os.remove(path_hablantes)  # de una transcripción anterior del mismo video
+    cantidad = ""
+    if identificar and todas_las_palabras:
+        audio = whisper.load_audio(input_file)
+        turnos = hablantes.diarizar(
+            audio, num_hablantes,
+            progress=lambda f, desc="": progress(parte_whisper + (1 - parte_whisper) * f, desc=desc),
+        )
+        etiquetas = hablantes.asignar(todas_las_palabras, turnos)
+        cantidad = f"\thablantes={len(hablantes.guardar(path_hablantes, todas_las_palabras, etiquetas, audio))}"
+        vram_pico = max(vram_pico, gpu.pico_gb())
+
+    # 4. Loops y SRT
+    lista_loops = _armar_y_escribir(path_srt, todas_las_palabras, ajustes)
 
     # Log
     duracion_habla = lista_loops[-1][-1].end if lista_loops else 0
     duracion_proceso = time.time() - t0
-    logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(lista_loops)}\tvram_pico={gpu.pico_gb():.1f}GB\tip={ip}")
-
-    # 4. Escribir el archivo SRT
-    loops.escribir_srt(lista_loops, path_srt)
+    logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(lista_loops)}{cantidad}\tvram_pico={vram_pico:.1f}GB\tip={ip}")
 
     return path_srt
+
+def hablantes_json(path_srt):
+    return palabras_json(path_srt)[:-len(".json")] + ".hablantes.json"
+
+def _armar_y_escribir(path_srt, palabras, ajustes):
+    """Arma los loops (sin mezclar hablantes si se identificaron) y escribe el SRT con los nombres."""
+    datos = hablantes.cargar(hablantes_json(path_srt))
+    if datos and len(datos["palabras"]) == len(palabras):
+        con_hablante = loops.armar_por_hablante(palabras, datos["palabras"], ajustes)
+        nombres = {h: d["nombre"] for h, d in datos["hablantes"].items()}
+        lista_loops = [loop for _, loop in con_hablante]
+        loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, os.path.basename(path_srt)),
+                           loops.nombres_por_loop(con_hablante, nombres))
+    else:
+        lista_loops = loops.armar(palabras, ajustes)
+        loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, os.path.basename(path_srt)))
+    return lista_loops
 
 def parsear_srt(contenido_srt):
     """Parsea un archivo SRT y devuelve una lista de bloques (numero, tiempo, texto)"""
@@ -289,8 +325,7 @@ def rearmar(nombre_srt, max_palabras, max_segundos, min_palabras, pausa_suave, r
     t0 = time.time()
     resultado = stable_whisper.WhisperResult(path_palabras)
     ajustes = _ajustes(max_palabras, max_segundos, min_palabras, pausa_suave)
-    lista_loops = loops.armar([w for s in resultado.segments for w in s.words], ajustes)
-    loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, nombre_srt))
+    lista_loops = _armar_y_escribir(nombre_srt, [w for s in resultado.segments for w in s.words], ajustes)
     logging.info(
         f"REARMADO\t{nombre_srt}\tloops={len(lista_loops)}\tmax_palabras={ajustes.max_palabras}\t"
         f"max_segundos={ajustes.max_segundos:g}\tmin_palabras={ajustes.min_palabras}\t"

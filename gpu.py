@@ -21,7 +21,7 @@ GB = 1024 ** 3
 VRAM_LIMIT_GB = float(os.environ.get("WHISPTEST_VRAM_GB", "5"))
 MARGEN_GB = 1.0  # siempre libre para escritorio y navegador
 # Pico estimado por modelo; calibrar con el campo vram_pico de uso.log
-NECESARIO_GB = {"whisper": 3.5, "demucs": 3.0}  # medido: whisper 3,5 GB (35 min), demucs_ft 2,4 GB (bloques de 3 min)
+NECESARIO_GB = {"whisper": 3.5, "demucs": 3.0, "pyannote": 1.0}  # medido: whisper 3,5 GB (35 min), demucs_ft 2,4 GB (bloques de 3 min), pyannote 0,6 GB (lotes de 8)
 OLLAMA_URL = "http://localhost:11434"
 
 _modelos = {}  # nombre -> (descargar, esta_cargado)
