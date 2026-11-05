@@ -11,6 +11,8 @@ import gc
 from collections import defaultdict
 from datetime import datetime
 
+import gpu
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, "output_translate")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -29,7 +31,7 @@ _whisper_lock = threading.Lock()
 _whisper_timer = None
 UNLOAD_TIMEOUT = 15 * 60
 
-def _unload_whisper():
+def _unload_whisper(motivo="por inactividad"):
     global _whisper_model
     with _whisper_lock:
         if _whisper_model is not None:
@@ -38,7 +40,7 @@ def _unload_whisper():
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            logging.info("MODELO\twhisper turbo descargado por inactividad")
+            logging.info(f"MODELO\twhisper turbo descargado {motivo}")
 
 def _get_whisper():
     global _whisper_model, _whisper_timer
@@ -61,10 +63,7 @@ def _schedule_whisper_unload():
         _whisper_timer.daemon = True
         _whisper_timer.start()
 
-def _estado_whisper():
-    if _whisper_model is not None:
-        return '<div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:50%;background:#22c55e"></div> Whisper cargado en VRAM</div>'
-    return '<div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:50%;background:#6b7280"></div> Whisper descargado (se carga al enviar trabajo)</div>'
+gpu.registrar("whisper", lambda: _unload_whisper("para liberar VRAM"), lambda: _whisper_model is not None)
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODELS = [
@@ -112,8 +111,9 @@ def procesar(input_file, request: gr.Request, progress=gr.Progress(track_tqdm=Tr
 
     # 1. Transcripción cruda (Gradio captura la barra de tqdm de Whisper)
     t0 = time.time()
-    model = _get_whisper()
-    result = model.transcribe(input_file)
+    with gpu.trabajo("whisper"):
+        model = _get_whisper()
+        result = model.transcribe(input_file)
     duracion_total = result.duration or 0
     idioma_detectado = result.language or "autodetectado"
     nombre_base = os.path.splitext(os.path.basename(input_file))[0]
@@ -238,7 +238,7 @@ def procesar(input_file, request: gr.Request, progress=gr.Progress(track_tqdm=Tr
     duracion_habla = loops[-1][-1].end if loops else 0
     duracion_proceso = time.time() - t0
     ip = request.client.host if request else "?"
-    logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(loops)}\tip={ip}")
+    logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(loops)}\tvram_pico={gpu.pico_gb():.1f}GB\tip={ip}")
 
     # 4. Escribir el archivo SRT
     with open(path_srt, "w", encoding="utf-8") as f:
@@ -289,6 +289,8 @@ def traducir_lote(textos_numerados, source_lang, source_code, target_lang, targe
         "prompt": prompt,
         "stream": False,
         "keep_alive": "15m",
+        # Los lotes son chicos; sin esto hereda OLLAMA_CONTEXT_LENGTH=65536 y ocupa más VRAM
+        "options": {"num_ctx": 4096},
     }, timeout=300)
     resp.raise_for_status()
     respuesta = resp.json()["response"].strip()
@@ -329,21 +331,25 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
     total = len(bloques)
     total_lotes = (total + BATCH_SIZE - 1) // BATCH_SIZE
 
-    for lote_idx in range(total_lotes):
-        inicio = lote_idx * BATCH_SIZE
-        fin = min(inicio + BATCH_SIZE, total)
-        lote = bloques[inicio:fin]
+    gpu.preparar_ollama()
+    try:
+        for lote_idx in range(total_lotes):
+            inicio = lote_idx * BATCH_SIZE
+            fin = min(inicio + BATCH_SIZE, total)
+            lote = bloques[inicio:fin]
 
-        progress((lote_idx + 1) / total_lotes, desc=f"Traduciendo lote {lote_idx + 1}/{total_lotes} (bloques {inicio + 1}-{fin}/{total})")
+            progress((lote_idx + 1) / total_lotes, desc=f"Traduciendo lote {lote_idx + 1}/{total_lotes} (bloques {inicio + 1}-{fin}/{total})")
 
-        textos = [texto for _, _, texto in lote]
-        try:
-            traducciones = traducir_lote(textos, source_lang, source_code, target_lang, target_code, instrucciones, modelo)
-        except Exception as e:
-            traducciones = [f"[ERROR: {e}]"] * len(textos)
+            textos = [texto for _, _, texto in lote]
+            try:
+                traducciones = traducir_lote(textos, source_lang, source_code, target_lang, target_code, instrucciones, modelo)
+            except Exception as e:
+                traducciones = [f"[ERROR: {e}]"] * len(textos)
 
-        for i, (numero, tiempo, _) in enumerate(lote):
-            bloques_traducidos.append((numero, tiempo, traducciones[i]))
+            for i, (numero, tiempo, _) in enumerate(lote):
+                bloques_traducidos.append((numero, tiempo, traducciones[i]))
+    finally:
+        gpu.descargar_ollama(modelo or OLLAMA_MODELS[0])
 
     nombre_base = os.path.splitext(nombre_srt)[0]
     if nombre_base.endswith(f"_{source_code}"):
@@ -487,11 +493,10 @@ def listar_archivos_output():
         tabla.append([f, size, mtime])
     return archivos, tabla
 
-# Interfaz de Gradio
-with gr.Blocks() as demo:
-    gr.Markdown("# Generador de Subtítulos + Traducción 🎬🌐")
-    indicador_whisper = gr.HTML(value=_estado_whisper)
+# ===================== INTERFAZ =====================
+# app.py arma la página unificada con estas piezas.
 
+def build_tabs():
     with gr.Tab("Transcribir"):
         input_data = gr.File(
             label="Subí tu Video o Audio (.mp3, .wav, .m4a, .aac, .flac, .ogg, .mp4, .mkv, etc.)",
@@ -511,7 +516,9 @@ with gr.Blocks() as demo:
         btn_transcribir.click(
             fn=procesar,
             inputs=[input_data],
-            outputs=[output_srt]
+            outputs=[output_srt],
+            concurrency_id="gpu",
+            concurrency_limit=1,
         )
 
     with gr.Tab("Traducir SRT"):
@@ -552,113 +559,108 @@ with gr.Blocks() as demo:
             fn=traducir_srt,
             inputs=[input_srt, idioma_origen, idioma_destino, instrucciones, modelo_ollama],
             outputs=[output_traducido, output_estado],
+            concurrency_id="gpu",
+            concurrency_limit=1,
         )
 
-    with gr.Tab("Logs e Historial"):
-        gr.Markdown("## 📋 Logs de Uso y Descarga de Archivos")
 
-        gr.Markdown("### 📂 Archivos Generados (`output_translate`)")
-        gr.Markdown("Selecciona un archivo generado previamente para descargarlo:")
+def build_archivos():
+    gr.Markdown("### 📂 Subtítulos generados (`output_translate`)")
+    gr.Markdown("Selecciona un archivo generado previamente para descargarlo:")
 
-        archivos_init, tabla_archivos_init = listar_archivos_output()
-        primer_archivo_path = os.path.join(OUTPUT_DIR, archivos_init[0]) if archivos_init else None
+    archivos_init, tabla_archivos_init = listar_archivos_output()
+    primer_archivo_path = os.path.join(OUTPUT_DIR, archivos_init[0]) if archivos_init else None
 
-        with gr.Row():
-            selector_archivo = gr.Dropdown(
-                choices=archivos_init,
-                value=archivos_init[0] if archivos_init else None,
-                label="Seleccionar archivo generado",
-                scale=3,
-            )
-            btn_refrescar_archivos = gr.Button("🔄 Refrescar Archivos", scale=1)
+    with gr.Row():
+        selector_archivo = gr.Dropdown(
+            choices=archivos_init,
+            value=archivos_init[0] if archivos_init else None,
+            label="Seleccionar archivo generado",
+            scale=3,
+        )
+        btn_refrescar_archivos = gr.Button("🔄 Refrescar Archivos", scale=1)
 
-        with gr.Row():
-            file_descarga = gr.File(
-                label="Descargar archivo",
-                value=primer_archivo_path,
-                interactive=False,
-            )
-
-        tabla_archivos = gr.Dataframe(
-            headers=["Nombre de Archivo", "Tamaño", "Fecha de Modificación"],
-            value=tabla_archivos_init,
+    with gr.Row():
+        file_descarga = gr.File(
+            label="Descargar archivo",
+            value=primer_archivo_path,
             interactive=False,
-            wrap=True,
-            max_height=250,
-            label="Archivos disponibles en output_translate (haz clic para seleccionarlo)",
         )
 
-        def on_seleccionar_archivo(archivo=None):
-            if archivo:
-                path = os.path.join(OUTPUT_DIR, archivo)
-                if os.path.exists(path):
-                    return path
-            return None
+    tabla_archivos = gr.Dataframe(
+        headers=["Nombre de Archivo", "Tamaño", "Fecha de Modificación"],
+        value=tabla_archivos_init,
+        interactive=False,
+        wrap=True,
+        max_height=250,
+        label="Archivos disponibles en output_translate (haz clic para seleccionarlo)",
+    )
 
-        def on_refrescar_archivos():
-            archs, tbl = listar_archivos_output()
-            primer = os.path.join(OUTPUT_DIR, archs[0]) if archs else None
-            return gr.update(choices=archs, value=archs[0] if archs else None), tbl, primer
+    def on_seleccionar_archivo(archivo=None):
+        if archivo:
+            path = os.path.join(OUTPUT_DIR, archivo)
+            if os.path.exists(path):
+                return path
+        return None
 
-        def on_select_tabla(evt: gr.SelectData = None):
-            if evt is None:
-                return gr.update(), None
-            row_idx = evt.index[0]
-            archs, _ = listar_archivos_output()
-            if 0 <= row_idx < len(archs):
-                arch = archs[row_idx]
-                path = os.path.join(OUTPUT_DIR, arch)
-                return arch, path
+    def on_refrescar_archivos():
+        archs, tbl = listar_archivos_output()
+        primer = os.path.join(OUTPUT_DIR, archs[0]) if archs else None
+        return gr.update(choices=archs, value=archs[0] if archs else None), tbl, primer
+
+    def on_select_tabla(evt: gr.SelectData = None):
+        if evt is None:
             return gr.update(), None
+        row_idx = evt.index[0]
+        archs, _ = listar_archivos_output()
+        if 0 <= row_idx < len(archs):
+            arch = archs[row_idx]
+            path = os.path.join(OUTPUT_DIR, arch)
+            return arch, path
+        return gr.update(), None
 
-        selector_archivo.change(
-            fn=on_seleccionar_archivo,
-            inputs=[selector_archivo],
-            outputs=[file_descarga],
-        )
-        btn_refrescar_archivos.click(
-            fn=on_refrescar_archivos,
-            outputs=[selector_archivo, tabla_archivos, file_descarga],
-        )
-        tabla_archivos.select(
-            fn=on_select_tabla,
-            outputs=[selector_archivo, file_descarga],
-        )
+    selector_archivo.change(
+        fn=on_seleccionar_archivo,
+        inputs=[selector_archivo],
+        outputs=[file_descarga],
+    )
+    btn_refrescar_archivos.click(
+        fn=on_refrescar_archivos,
+        outputs=[selector_archivo, tabla_archivos, file_descarga],
+    )
+    tabla_archivos.select(
+        fn=on_select_tabla,
+        outputs=[selector_archivo, file_descarga],
+    )
 
-        gr.Markdown("---")
-        gr.Markdown("### 📊 Registro de Usos (Translate y Separation - desde Septiembre)")
 
-        btn_refrescar_logs = gr.Button("🔄 Actualizar Tabla de Logs", variant="secondary")
+def build_historial():
+    gr.Markdown("### 📊 Registro de Usos (Translate y Separation - desde Septiembre)")
 
-        resumen_init, detalle_init = obtener_tablas_log()
+    btn_refrescar_logs = gr.Button("🔄 Actualizar Tabla de Logs", variant="secondary")
 
-        gr.Markdown("#### 📅 Resumen por Día")
-        tabla_resumen = gr.Dataframe(
-            headers=["Día", "Translate (Whisper)", "Audio Translate", "Separation (Demucs)", "Audio Separation", "Total Usos", "Audio Total", "Tiempo Proceso"],
-            value=resumen_init,
-            interactive=False,
-            wrap=True,
-            label="Resumen por Día",
-        )
+    resumen_init, detalle_init = obtener_tablas_log()
 
-        gr.Markdown("#### 📝 Detalle de Operaciones")
-        tabla_detalle = gr.Dataframe(
-            headers=["Día", "Hora", "Servidor", "Operación", "Archivo / Tarea", "Duración Audio", "Tiempo Proceso", "IP"],
-            value=detalle_init,
-            interactive=False,
-            wrap=True,
-            max_height=400,
-            label="Detalle individual de operaciones",
-        )
+    gr.Markdown("#### 📅 Resumen por Día")
+    tabla_resumen = gr.Dataframe(
+        headers=["Día", "Translate (Whisper)", "Audio Translate", "Separation (Demucs)", "Audio Separation", "Total Usos", "Audio Total", "Tiempo Proceso"],
+        value=resumen_init,
+        interactive=False,
+        wrap=True,
+        label="Resumen por Día",
+    )
 
-        btn_refrescar_logs.click(
-            fn=obtener_tablas_log,
-            outputs=[tabla_resumen, tabla_detalle],
-        )
+    gr.Markdown("#### 📝 Detalle de Operaciones")
+    tabla_detalle = gr.Dataframe(
+        headers=["Día", "Hora", "Servidor", "Operación", "Archivo / Tarea", "Duración Audio", "Tiempo Proceso", "IP"],
+        value=detalle_init,
+        interactive=False,
+        wrap=True,
+        max_height=400,
+        label="Detalle individual de operaciones",
+    )
 
-    timer = gr.Timer(5)
-    timer.tick(fn=_estado_whisper, outputs=[indicador_whisper])
-
-if __name__ == "__main__":
-    from chunk_uploader import launch_server
-    launch_server(demo, port=8188, output_dir=OUTPUT_DIR)
+    btn_refrescar_logs.click(
+        fn=obtener_tablas_log,
+        outputs=[tabla_resumen, tabla_detalle],
+    )

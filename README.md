@@ -30,24 +30,28 @@ Y tener descargados los modelos:
 ollama pull translategemma:latest
 ```
 
-## 💡 Ejecutar los servidores
+## 💡 Ejecutar la app
 
-Activa el entorno virtual:
+Todo corre en un solo proceso (`app.py`, puerto 8188, publicado en [ia.fdrdm.com](https://ia.fdrdm.com)) con pestañas para transcribir, traducir SRT, separar audio y ver archivos e historial.
+
+Como servicio de usuario (recomendado):
+
+```bash
+systemctl --user enable --now whisptest
+journalctl --user -u whisptest   # o tail -f app.log
+```
+
+O a mano:
 
 ```bash
 source .venv/bin/activate
+python3 app.py
 ```
 
-Inicia los servidores:
+## 🎛️ Manejo de VRAM (`gpu.py`)
 
-```bash
-nohup python3 server_separation.py > server_separation.log 2>&1 &
-nohup python3 server_translate.py > server_translate.log 2>&1 &
-```
-
-## 🌐 Accesos Web
-
-Una vez iniciados los servidores, puedes acceder a cada interfaz en el navegador:
-
-- **Server Separation**: [http://localhost:3838](http://localhost:3838)
-- **Server Translate**: [http://localhost:8188](http://localhost:8188)
+- Una sola cola de GPU: transcripción, traducción y separación nunca corren a la vez.
+- Un solo modelo propio en VRAM: antes de cargar Whisper se descarga Demucs y viceversa; para traducir se descargan ambos y al terminar se saca `translategemma` de Ollama.
+- PyTorch queda limitado a `WHISPTEST_VRAM_GB` (5 GB por defecto, se cambia en `~/.config/systemd/user/whisptest.service`). Si un trabajo lo supera, falla con un mensaje claro en vez de dejar sin memoria al escritorio.
+- Antes de empezar se verifica la VRAM libre; si no alcanza (por ejemplo, porque Ollama tiene un modelo grande cargado) se avisa qué la está usando.
+- `uso.log` registra `vram_pico` de cada trabajo para calibrar `NECESARIO_GB` en `gpu.py`.
