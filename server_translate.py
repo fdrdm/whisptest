@@ -11,6 +11,7 @@ import gc
 from collections import defaultdict
 from datetime import datetime
 
+import cola
 import gpu
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -91,7 +92,7 @@ def segundos_a_srt(segundos):
     ms = int((segundos - int(segundos)) * 1000)
     return f"{h:02}:{m:02}:{s:02},{ms:03}"
 
-def procesar(input_file, request: gr.Request, progress=gr.Progress(track_tqdm=True)):
+def procesar(input_file, *, ip, progress):
     if not input_file:
         return None
 
@@ -99,7 +100,10 @@ def procesar(input_file, request: gr.Request, progress=gr.Progress(track_tqdm=Tr
     t0 = time.time()
     with gpu.trabajo("whisper"):
         model = _get_whisper()
-        result = model.transcribe(input_file)
+        result = model.transcribe(
+            input_file,
+            progress_callback=lambda hecho, total: progress(hecho / total if total else 0, desc="Transcribiendo..."),
+        )
     duracion_total = result.duration or 0
     idioma_detectado = result.language or "autodetectado"
     nombre_base = os.path.splitext(os.path.basename(input_file))[0]
@@ -223,7 +227,6 @@ def procesar(input_file, request: gr.Request, progress=gr.Progress(track_tqdm=Tr
     # Log
     duracion_habla = loops[-1][-1].end if loops else 0
     duracion_proceso = time.time() - t0
-    ip = request.client.host if request else "?"
     logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(loops)}\tvram_pico={gpu.pico_gb():.1f}GB\tip={ip}")
 
     # 4. Escribir el archivo SRT
@@ -293,7 +296,7 @@ def traducir_lote(textos_numerados, source_lang, source_code, target_lang, targe
         resultado.append(traducciones.get(i + 1, f"[SIN TRADUCCION] {texto_original}"))
     return resultado
 
-def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, modelo, request: gr.Request, progress=gr.Progress()):
+def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, modelo, *, ip, progress):
     if not archivo_srt:
         return None, "No se subió ningún archivo SRT."
 
@@ -348,10 +351,22 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
             f.write(f"{numero}\n{tiempo}\n{texto}\n\n")
 
     duracion_proceso = time.time() - t0
-    ip = request.client.host if request else "?"
     logging.info(f"TRADUCCION\t{nombre_srt}\t{source_lang}->{target_lang}\tbloques={total}\tproceso={duracion_proceso:.0f}s\tip={ip}")
 
     return path_salida, f"Traducción completada: {total} bloques en {total_lotes} lotes ({source_lang} -> {target_lang})"
+
+def procesar_en_cola(input_file, request: gr.Request, progress=gr.Progress()):
+    if not input_file:
+        return None
+    t = cola.encolar("Transcribir", os.path.basename(input_file), procesar, (input_file,), cola.ip(request))
+    return cola.esperar(t, progress)
+
+def traducir_en_cola(archivo_srt, idioma_origen, idioma_destino, instrucciones, modelo, request: gr.Request, progress=gr.Progress()):
+    if not archivo_srt:
+        return None, "No se subió ningún archivo SRT."
+    t = cola.encolar("Traducir", os.path.basename(archivo_srt), traducir_srt,
+                     (archivo_srt, idioma_origen, idioma_destino, instrucciones, modelo), cola.ip(request))
+    return cola.esperar(t, progress)
 
 def format_sec(sec):
     m, s = divmod(int(sec), 60)
@@ -499,11 +514,10 @@ def build_tabs():
             output_srt = gr.File(label="Archivo SRT")
 
         btn_transcribir.click(
-            fn=procesar,
+            fn=procesar_en_cola,
             inputs=[input_data],
             outputs=[output_srt],
-            concurrency_id="gpu",
-            concurrency_limit=1,
+            concurrency_limit=None,  # la GPU la serializa cola.py
         )
 
     with gr.Tab("Traducir SRT"):
@@ -541,11 +555,10 @@ def build_tabs():
             output_estado = gr.Textbox(label="Estado", interactive=False)
 
         btn_traducir.click(
-            fn=traducir_srt,
+            fn=traducir_en_cola,
             inputs=[input_srt, idioma_origen, idioma_destino, instrucciones, modelo_ollama],
             outputs=[output_traducido, output_estado],
-            concurrency_id="gpu",
-            concurrency_limit=1,
+            concurrency_limit=None,  # la GPU la serializa cola.py
         )
 
 

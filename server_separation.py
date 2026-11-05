@@ -10,6 +10,7 @@ import subprocess
 import numpy as np
 from datetime import datetime
 
+import cola
 import gpu
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -197,7 +198,7 @@ def separar_demucs_chunked(wav, model, shifts, overlap, sr=44100,
 
 
 def separar(input_file, modelo_demucs_name, demucs_shifts, demucs_overlap,
-            vad_threshold, request: gr.Request, progress=gr.Progress()):
+            vad_threshold, *, ip, progress):
     if not input_file:
         return None, None, None, None, ""
 
@@ -258,7 +259,6 @@ def separar(input_file, modelo_demucs_name, demucs_shifts, demucs_overlap,
 
     duracion_proceso = time.time() - t0
     duracion_habla = sum(ts['end'] - ts['start'] for ts in timestamps)
-    ip = request.client.host if request else "?"
     logging.info(
         f"SEPARACION\t{nombre_base}\tmodelo={modelo_demucs_name}\t"
         f"audio={duracion_audio:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\t"
@@ -269,6 +269,16 @@ def separar(input_file, modelo_demucs_name, demucs_shifts, demucs_overlap,
     estado = f"Listo en {duracion_proceso:.0f}s | Audio: {duracion_audio/60:.1f} min | {modelo_demucs_name} shifts={int(demucs_shifts)} | {len(timestamps)} segmentos de habla"
 
     return vocals_vad_mp3, sfx_vad_mp3, vocals_mp3, sfx_mp3, estado
+
+
+def separar_en_cola(input_file, modelo_demucs_name, demucs_shifts, demucs_overlap,
+                    vad_threshold, request: gr.Request, progress=gr.Progress()):
+    if not input_file:
+        return None, None, None, None, ""
+    t = cola.encolar("Separar", os.path.basename(input_file), separar,
+                     (input_file, modelo_demucs_name, demucs_shifts, demucs_overlap, vad_threshold),
+                     cola.ip(request))
+    return cola.esperar(t, progress)
 
 
 def format_size(bytes_size):
@@ -345,11 +355,10 @@ def build_tabs():
         out_estado = gr.Textbox(label="Estado", interactive=False)
 
         btn.click(
-            fn=separar,
+            fn=separar_en_cola,
             inputs=[input_file, modelo_demucs, demucs_shifts, demucs_overlap, vad_threshold],
             outputs=[out_voces_vad, out_musica_vad, out_voces, out_musica, out_estado],
-            concurrency_id="gpu",
-            concurrency_limit=1,
+            concurrency_limit=None,  # la GPU la serializa cola.py
         )
 
 
