@@ -154,7 +154,7 @@ def _armar_y_escribir(path_srt, palabras, ajustes):
         nombres = {h: d["nombre"] for h, d in datos["hablantes"].items()}
         lista_loops = [loop for _, loop in con_hablante]
         loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, os.path.basename(path_srt)),
-                           loops.nombres_por_loop(con_hablante, nombres))
+                           loops.nombres_por_loop(con_hablante, nombres, datos.get("todos", True)))
     else:
         lista_loops = loops.armar(palabras, ajustes)
         loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, os.path.basename(path_srt)))
@@ -213,6 +213,20 @@ def traducir_lote(textos_numerados, source_lang, source_code, target_lang, targe
         resultado.append(traducciones.get(i + 1, f"[SIN TRADUCCION] {texto_original}"))
     return resultado
 
+def _separar_nombres(textos):
+    """Saca el "Nombre: " de cada bloque para que el modelo no lo traduzca. Devuelve (prefijos, textos).
+
+    Cuenta como nombre lo que está antes de ": " si tiene hasta 3 palabras y, en el archivo,
+    algún nombre se repite (así "Note: ..." suelto en un SRT sin hablantes no se toca).
+    """
+    partes = [re.match(r"^([^:\n.?!]{1,40}): (.*)$", t, re.DOTALL) for t in textos]
+    candidatos = [m.group(1) for m in partes if m and len(m.group(1).split()) <= 3]
+    if not any(candidatos.count(c) >= 2 for c in candidatos):
+        return [None] * len(textos), list(textos)
+    validos = set(candidatos)
+    prefijos = [m.group(1) if m and m.group(1) in validos else None for m in partes]
+    return prefijos, [m.group(2) if p else t for m, p, t in zip(partes, prefijos, textos)]
+
 def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, modelo, *, ip, progress):
     if not archivo_srt:
         return None, "No se subió ningún archivo SRT."
@@ -232,6 +246,7 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
     target_lang = idioma_destino
     target_code = IDIOMAS.get(idioma_destino, "es")
 
+    prefijos, textos_sin_nombre = _separar_nombres([texto for _, _, texto in bloques])
     bloques_traducidos = []
     total = len(bloques)
     total_lotes = (total + BATCH_SIZE - 1) // BATCH_SIZE
@@ -245,14 +260,15 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
 
             progress((lote_idx + 1) / total_lotes, desc=f"Traduciendo lote {lote_idx + 1}/{total_lotes} (bloques {inicio + 1}-{fin}/{total})")
 
-            textos = [texto for _, _, texto in lote]
+            textos = textos_sin_nombre[inicio:fin]
             try:
                 traducciones = traducir_lote(textos, source_lang, source_code, target_lang, target_code, instrucciones, modelo)
             except Exception as e:
                 traducciones = [f"[ERROR: {e}]"] * len(textos)
 
             for i, (numero, tiempo, _) in enumerate(lote):
-                bloques_traducidos.append((numero, tiempo, traducciones[i]))
+                prefijo = prefijos[inicio + i]
+                bloques_traducidos.append((numero, tiempo, f"{prefijo}: {traducciones[i]}" if prefijo else traducciones[i]))
     finally:
         gpu.descargar_ollama(modelo or OLLAMA_MODELS[0])
 
@@ -272,12 +288,14 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
 
     return path_salida, f"Traducción completada: {total} bloques en {total_lotes} lotes ({source_lang} -> {target_lang})"
 
-def procesar_en_cola(input_file, max_palabras, max_segundos, min_palabras, pausa_suave,
+def procesar_en_cola(input_file, identificar, num_hablantes, max_palabras, max_segundos, min_palabras, pausa_suave,
                      request: gr.Request, progress=gr.Progress()):
     if not input_file:
         return None
     ajustes = _ajustes(max_palabras, max_segundos, min_palabras, pausa_suave)
-    t = cola.encolar("Transcribir", os.path.basename(input_file), procesar, (input_file, ajustes), cola.ip(request))
+    cantidad = int(num_hablantes) if str(num_hablantes).isdigit() else None
+    t = cola.encolar("Transcribir", os.path.basename(input_file), procesar,
+                     (input_file, ajustes, identificar, cantidad), cola.ip(request))
     return cola.esperar(t, progress)
 
 # ===================== REARMAR LOOPS =====================
@@ -358,6 +376,12 @@ def build_tabs(demo):
             type="filepath",
         )
 
+        with gr.Row():
+            identificar = gr.Checkbox(True, label="Identificar hablantes",
+                                      info="Pone \"Nombre: texto\" en el SRT (pyannote). Suma unos 15 s.")
+            num_hablantes = gr.Dropdown(["Automático"] + [str(n) for n in range(1, 11)], value="Automático",
+                                        label="Cantidad de hablantes", info="Si la sabés, mejora la precisión")
+
         d = AJUSTES_DEF
         with gr.Accordion("Ajustes de loops", open=False):
             with gr.Row():
@@ -385,19 +409,51 @@ def build_tabs(demo):
                                   info="La que acabás de hacer, o cualquier anterior", scale=3)
             btn_rearmar = gr.Button("Rearmar con estos ajustes", scale=1)
         resumen = gr.Markdown()
+        refresco = gr.State(0)  # para redibujar el panel aunque se repita el mismo video
+
+        @gr.render(inputs=[elegido, refresco])
+        def panel_hablantes(nombre_srt, _):
+            datos = hablantes.cargar(hablantes_json(nombre_srt)) if nombre_srt else None
+            if not datos or not datos.get("hablantes"):
+                return
+            sugeridos = hablantes.nombres_usados(os.path.join(OUTPUT_DIR, "palabras"))
+            gr.Markdown("### Hablantes\nEscuchá cada muestra, poné los nombres y aplicalos. "
+                        "Si pyannote partió a una persona en dos, poneles el mismo nombre.")
+            campos = []
+            for h, info in datos["hablantes"].items():
+                with gr.Row(equal_height=True):
+                    gr.Audio(info["muestra"], type="filepath", interactive=False, show_label=False, scale=2)
+                    frase = info["frase"] if len(info["frase"]) <= 140 else info["frase"][:140] + "…"
+                    m, seg = divmod(int(info["segundos"]), 60)
+                    with gr.Column(scale=3):
+                        gr.Markdown(f"**Hablante {h[1:]}** · habla {f'{m}m {seg:02d}s' if m else f'{seg}s'}\n\n_{frase}_")
+                    campos.append(gr.Dropdown(sugeridos, value=info["nombre"] or None, allow_custom_value=True,
+                                              label="Nombre", interactive=True, scale=2))
+            with gr.Row():
+                todos = gr.Checkbox(datos.get("todos", True), label="Nombre en todos los loops", interactive=True,
+                                    info="Destildado: solo cuando cambia el hablante o tras una pausa de más de 2 s")
+                btn_aplicar = gr.Button("Aplicar nombres", variant="primary")
+
+            def aplicar_nombres(todos_valor, *valores):
+                nombres = dict(zip(datos["hablantes"], valores[:len(campos)]))
+                hablantes.poner_nombres(hablantes_json(nombre_srt), nombres, todos_valor)
+                return rearmar(nombre_srt, *valores[len(campos):], None)
+
+            btn_aplicar.click(aplicar_nombres, [todos, *campos, *ajustes], [output_srt, resumen, vista])
+
         vista = gr.Textbox(label="Vista previa", lines=10, max_lines=10, interactive=False, buttons=["copy"])
         output_srt = gr.File(label="Archivo SRT", interactive=False)
 
-        def al_terminar(path):
+        def al_terminar(path, n):
             nombre = os.path.basename(path) if path else None
-            return gr.update(choices=transcripciones(), value=nombre), *mostrar_srt(nombre)[1:]
+            return gr.update(choices=transcripciones(), value=nombre), *mostrar_srt(nombre)[1:], n + 1
 
         btn_transcribir.click(
             fn=procesar_en_cola,
-            inputs=[input_data, *ajustes],
+            inputs=[input_data, identificar, num_hablantes, *ajustes],
             outputs=[output_srt],
             concurrency_limit=None,  # la GPU la serializa cola.py
-        ).success(al_terminar, output_srt, [elegido, resumen, vista])
+        ).success(al_terminar, [output_srt, refresco], [elegido, resumen, vista, refresco])
         btn_rearmar.click(rearmar, [elegido, *ajustes], [output_srt, resumen, vista])
         elegido.input(mostrar_srt, elegido, [output_srt, resumen, vista])
         tab_transcribir.select(lambda: gr.update(choices=transcripciones()), None, elegido, show_progress="hidden")

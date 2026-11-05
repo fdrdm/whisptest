@@ -52,6 +52,12 @@ python3 app.py
 
 Cada transcripción guarda sus palabras con tiempos en `output_translate/palabras/<video>_<idioma>.json`. En la pestaña **Transcribir**, el desplegable *Ajustes de loops* (máx. palabras, máx. segundos, mínimo para cortar en un punto y pausa para el corte suave) se usa al transcribir y para **Rearmar con estos ajustes**: reescribe el SRT al instante desde ese JSON, sin GPU ni cola. Las transcripciones anteriores a esto no tienen JSON y hay que volver a transcribirlas una vez. El corte suave solo conoce conjunciones en inglés, y los topes pueden pasarse hasta 5 palabras para cerrar la oración.
 
+## 🗣️ Hablantes (`hablantes.py`)
+
+Con **Identificar hablantes** (activado por defecto) el trabajo de transcripción corre pyannote (`pyannote/speaker-diarization-community-1`) después de Whisper: unos 15 s más y 0,6 GB de VRAM (lotes de 8). Cada palabra queda asignada a un hablante en `palabras/<video>_<idioma>.hablantes.json`, con una muestra de audio de cada uno. Los loops nunca mezclan hablantes y el SRT lleva `Nombre: texto` (en todos los loops, o solo cuando cambia el hablante o tras una pausa de más de 2 s). En **Resultado → Hablantes** se escuchan las muestras y se ponen los nombres (sugiere los usados en otros videos). Al traducir, los nombres se separan antes de mandar el texto al modelo y se vuelven a poner después.
+
+Requiere aceptar los términos del modelo en Hugging Face y un token en `~/.cache/huggingface/token` solo para la primera descarga.
+
 ## 🎛️ Manejo de VRAM (`gpu.py`)
 
 - Una sola cola de trabajos (`cola.py`): transcripción, traducción y separación se procesan de a una, en orden de llegada, y siguen aunque quien los mandó cierre la página. La pestaña **Cola** muestra todos los trabajos y deja bajar los resultados de los terminados o cancelar uno (en espera sale de la cola; si ya corre, se detiene en el próximo segmento, bloque o lote). La cola vive en memoria: reiniciar el servicio pierde los trabajos en espera.

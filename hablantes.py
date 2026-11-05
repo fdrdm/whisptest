@@ -162,8 +162,29 @@ def guardar(path_json, palabras, etiquetas, audio):
         _, _, frase = max(tramos[h], key=lambda t: min(t[1] - t[0], MUESTRA_SEG))
         hablantes[h] = {"nombre": "", "segundos": round(segundos[h], 1), "frase": frase.strip(), "muestra": muestra}
     with open(path_json, "w", encoding="utf-8") as f:
-        json.dump({"palabras": etiquetas, "hablantes": hablantes}, f, ensure_ascii=False, indent=1)
+        json.dump({"palabras": etiquetas, "hablantes": hablantes, "todos": True}, f, ensure_ascii=False, indent=1)
     return hablantes
+
+
+def poner_nombres(path_json, nombres, todos):
+    datos = cargar(path_json)
+    for h, nombre in nombres.items():
+        datos["hablantes"][h]["nombre"] = (nombre or "").strip()
+    datos["todos"] = bool(todos)
+    with open(path_json, "w", encoding="utf-8") as f:
+        json.dump(datos, f, ensure_ascii=False, indent=1)
+
+
+def nombres_usados(carpeta):
+    """Nombres puestos en otros videos, los más usados primero (para sugerir)."""
+    cuenta = defaultdict(int)
+    if os.path.isdir(carpeta):
+        for archivo in os.listdir(carpeta):
+            if archivo.endswith(".hablantes.json"):
+                for datos in (cargar(os.path.join(carpeta, archivo)) or {}).get("hablantes", {}).values():
+                    if datos.get("nombre"):
+                        cuenta[datos["nombre"]] += 1
+    return sorted(cuenta, key=lambda n: (-cuenta[n], n.lower()))
 
 
 def cargar(path_json):

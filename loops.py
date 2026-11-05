@@ -152,8 +152,8 @@ def armar_por_hablante(palabras, hablantes, aj=None):
 PAUSA_NOMBRE = 2.0  # segundos: tras una pausa así se repite el nombre aunque hable el mismo
 
 
-def nombres_por_loop(con_hablante, nombres):
-    """Prefijo "Nombre" de cada loop: cuando cambia el hablante o después de una pausa larga.
+def nombres_por_loop(con_hablante, nombres, todos=True):
+    """Prefijo "Nombre" de cada loop: en todos, o solo cuando cambia el hablante o tras una pausa larga.
 
     nombres: {hablante: nombre}; los que no tienen nombre salen como "Hablante N".
     Si hay un solo hablante y no tiene nombre, no se pone ninguno.
@@ -163,7 +163,7 @@ def nombres_por_loop(con_hablante, nombres):
         return [None] * len(con_hablante)
     prefijos, anterior, fin_anterior = [], None, None
     for h, loop in con_hablante:
-        if h != anterior or loop[0].start - fin_anterior > PAUSA_NOMBRE:
+        if todos or h != anterior or loop[0].start - fin_anterior > PAUSA_NOMBRE:
             prefijos.append(nombres.get(h) or f"Hablante {h[1:]}")
         else:
             prefijos.append(None)
