@@ -50,7 +50,7 @@ python3 app.py
 
 ## 🎛️ Manejo de VRAM (`gpu.py`)
 
-- Una sola cola de trabajos (`cola.py`): transcripción, traducción y separación se procesan de a una, en orden de llegada, y siguen aunque quien los mandó cierre la página. La pestaña **Cola** muestra todos los trabajos y deja bajar los resultados de los terminados. La cola vive en memoria: reiniciar el servicio pierde los trabajos en espera.
+- Una sola cola de trabajos (`cola.py`): transcripción, traducción y separación se procesan de a una, en orden de llegada, y siguen aunque quien los mandó cierre la página. La pestaña **Cola** muestra todos los trabajos y deja bajar los resultados de los terminados o cancelar uno (en espera sale de la cola; si ya corre, se detiene en el próximo segmento, bloque o lote). La cola vive en memoria: reiniciar el servicio pierde los trabajos en espera.
 - Los modelos se cargan por trabajo y se descargan apenas termina (Whisper carga en ~10 s, Demucs en ~2 s); al terminar de traducir también se saca `translategemma` de Ollama.
 - PyTorch queda limitado a `WHISPTEST_VRAM_GB` (5 GB por defecto, se cambia en `~/.config/systemd/user/whisptest.service`). Si un trabajo lo supera, falla con un mensaje claro en vez de dejar sin memoria al escritorio.
 - Antes de empezar se verifica la VRAM libre; si no alcanza (por ejemplo, porque Ollama tiene un modelo grande cargado) se avisa qué la está usando.

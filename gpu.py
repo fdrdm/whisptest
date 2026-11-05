@@ -110,6 +110,11 @@ def trabajo(nombre):
         _liberar_propios()
 
 
+def liberar():
+    """Descarga los modelos propios y devuelve la VRAM al driver (al terminar cada trabajo)."""
+    _liberar_propios()
+
+
 def pico_gb():
     """Pico de VRAM reservada por PyTorch desde el inicio del último trabajo."""
     return torch.cuda.max_memory_reserved() / GB if _cuda_activa() else 0.0
