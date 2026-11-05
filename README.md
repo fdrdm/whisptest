@@ -32,7 +32,7 @@ ollama pull translategemma:latest
 
 ## 💡 Ejecutar la app
 
-Todo corre en un solo proceso (`app.py`, puerto 8188, publicado en [ia.fdrdm.com](https://ia.fdrdm.com)) con pestañas para transcribir, traducir SRT, separar audio y ver archivos e historial.
+Todo corre en un solo proceso (`app.py`, puerto 8188, publicado en [ia.fdrdm.com](https://ia.fdrdm.com)) con pestañas para transcribir, traducir SRT, separar audio, ver la cola, los archivos y el historial.
 
 Como servicio de usuario (recomendado):
 
@@ -47,6 +47,10 @@ O a mano:
 source .venv/bin/activate
 python3 app.py
 ```
+
+## 🔁 Loops (`loops.py`)
+
+Cada transcripción guarda sus palabras con tiempos en `output_translate/palabras/<video>_<idioma>.json`. En la pestaña **Transcribir**, el desplegable *Ajustes de loops* (máx. palabras, máx. segundos, mínimo para cortar en un punto y pausa para el corte suave) se usa al transcribir y para **Rearmar con estos ajustes**: reescribe el SRT al instante desde ese JSON, sin GPU ni cola. Las transcripciones anteriores a esto no tienen JSON y hay que volver a transcribirlas una vez. El corte suave solo conoce conjunciones en inglés, y los topes pueden pasarse hasta 5 palabras para cerrar la oración.
 
 ## 🎛️ Manejo de VRAM (`gpu.py`)
 
