@@ -245,6 +245,77 @@ def _separar_nombres(textos):
     prefijos = [m.group(1) if m and m.group(1) in validos else None for m in partes]
     return prefijos, [m.group(2) if p else t for m, p, t in zip(partes, prefijos, textos)]
 
+# ===================== REPASO DE LA TRADUCCIÓN =====================
+# El modelo (4B) traduce de a 10 bloques y a veces se saltea uno, corre la traducción un renglón
+# o se le escapa un regionalismo. Medido en un video de 1328 bloques: 1 bloque perdido, 11 "Vale".
+
+# Regionalismos que delatan un doblaje no neutro. "vale" solo como interjección ("Vale.", "vale,"):
+# "vale la pena" o "¿cuánto vale?" son neutros. "tío/tía" solo si en inglés no dice uncle/aunt.
+REGIONALISMOS = {"Spanish": re.compile(
+    r"\b(guay|tíos?|tías?|coger|cogí|coge|cógel\w*|móvil|ordenador|molan?|chaval\w*|joder|hostias?|vosotr[oa]s|"
+    r"vuestr[oa]s?|os|\w+áis|\w+éis|tronco|flipa\w*|güey|wey|órale|chid[oa]s?|neta|ahorita|boludo|pibe|"
+    r"qué padre|vale(?=\s*(?:[.,!?…]|$)))\b", re.IGNORECASE)}
+NO_REGIONALISMO = {"dieciséis", "veintiséis"}
+
+def _regionalismos(texto_en, texto, idioma):
+    patron = REGIONALISMOS.get(idioma)
+    if not patron:
+        return []
+    halladas = []
+    for m in patron.finditer(texto):
+        w = m.group(0).lower()
+        if w in NO_REGIONALISMO:
+            continue
+        if w.startswith("tí") and re.search(r"\b(uncle|aunt)", texto_en, re.IGNORECASE):
+            continue
+        if w == "vale" and re.search(r"\b(cuánto|cuanto|no|lo|que)\s+vale", texto, re.IGNORECASE):
+            continue
+        halladas.append(w)
+    return halladas
+
+def _corrimientos(originales, traducidas):
+    """Índices de vecinos con largos raros en sentidos opuestos: señal de que se corrió un renglón."""
+    proporcion = [len(b) / max(len(a), 1) for a, b in zip(originales, traducidas)]
+    largos = [len(a) >= 12 for a in originales]
+    sospechosos = set()
+    for i in range(len(originales) - 1):
+        if largos[i] and largos[i + 1] and (
+            (proporcion[i] > 2 and proporcion[i + 1] < 0.5) or (proporcion[i] < 0.5 and proporcion[i + 1] > 2)):
+            sospechosos |= {i, i + 1}
+    return sospechosos
+
+def _falta(texto):
+    return texto.startswith(("[SIN TRADUCCION]", "[ERROR:"))
+
+def _repasar(originales, traducidas, idiomas, instrucciones, modelo, progress):
+    """Retraduce de a uno los bloques con problemas. Devuelve (traducidas, retraducidos, a_revisar)."""
+    source_lang, source_code, target_lang, target_code = idiomas
+    problemas = sorted({i for i, t in enumerate(traducidas) if _falta(t)}
+                       | {i for i, (a, t) in enumerate(zip(originales, traducidas)) if _regionalismos(a, t, target_lang)}
+                       | _corrimientos(originales, traducidas))
+    traducidas = list(traducidas)
+    for n, i in enumerate(problemas):
+        progress(1.0, desc=f"Repasando bloques dudosos ({n + 1}/{len(problemas)})")
+        anterior = originales[i - 1] if i > 0 else ""
+        siguiente = originales[i + 1] if i + 1 < len(originales) else ""
+        contexto = f'Context only, do not translate it: previous line "{anterior}", next line "{siguiente}"'
+        extra = f"{instrucciones.strip()}\n{contexto}" if instrucciones.strip() else contexto
+        try:
+            nueva = traducir_lote([originales[i]], source_lang, source_code, target_lang, target_code, extra, modelo)[0]
+        except Exception as e:
+            nueva = f"[ERROR: {e}]"
+        if not _falta(nueva):
+            traducidas[i] = nueva
+    if target_lang == "Spanish":
+        # Si el modelo insiste con el "Vale" de España, la interjección neutra es "Bien"
+        traducidas = [re.sub(r"\b(V|v)ale(?=\s*(?:[.,!?…]|$))",
+                             lambda m: "Bien" if m.group(1) == "V" else "bien", t)
+                      if "vale" in _regionalismos(a, t, target_lang) else t
+                      for a, t in zip(originales, traducidas)]
+    a_revisar = [i for i, (a, t) in enumerate(zip(originales, traducidas))
+                 if _falta(t) or _regionalismos(a, t, target_lang)]
+    return traducidas, problemas, a_revisar
+
 def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, modelo, *, ip, progress):
     if not archivo_srt:
         return None, "No se subió ningún archivo SRT."
@@ -265,7 +336,7 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
     target_code = IDIOMAS.get(idioma_destino, "es")
 
     prefijos, textos_sin_nombre = _separar_nombres([texto for _, _, texto in bloques])
-    bloques_traducidos = []
+    traducidas = []
     total = len(bloques)
     total_lotes = (total + BATCH_SIZE - 1) // BATCH_SIZE
 
@@ -274,7 +345,6 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
         for lote_idx in range(total_lotes):
             inicio = lote_idx * BATCH_SIZE
             fin = min(inicio + BATCH_SIZE, total)
-            lote = bloques[inicio:fin]
 
             progress((lote_idx + 1) / total_lotes, desc=f"Traduciendo lote {lote_idx + 1}/{total_lotes} (bloques {inicio + 1}-{fin}/{total})")
 
@@ -284,9 +354,11 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
             except Exception as e:
                 traducciones = [f"[ERROR: {e}]"] * len(textos)
 
-            for i, (numero, tiempo, _) in enumerate(lote):
-                prefijo = prefijos[inicio + i]
-                bloques_traducidos.append((numero, tiempo, f"{prefijo}: {traducciones[i]}" if prefijo else traducciones[i]))
+            traducidas += traducciones
+
+        traducidas, retraducidos, a_revisar = _repasar(
+            textos_sin_nombre, traducidas, (source_lang, source_code, target_lang, target_code),
+            instrucciones, modelo, progress)
     finally:
         gpu.descargar_ollama(modelo or OLLAMA_MODELS[0])
 
@@ -300,13 +372,19 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
     path_salida = os.path.join(OUTPUT_DIR, nombre_salida)
 
     with open(path_salida, "w", encoding="utf-8") as f:
-        for numero, tiempo, texto in bloques_traducidos:
-            f.write(f"{numero}\n{tiempo}\n{texto}\n\n")
+        for (numero, tiempo, _), prefijo, texto in zip(bloques, prefijos, traducidas):
+            f.write(f"{numero}\n{tiempo}\n{f'{prefijo}: {texto}' if prefijo else texto}\n\n")
 
     duracion_proceso = time.time() - t0
-    logging.info(f"TRADUCCION\t{nombre_srt}\t{source_lang}->{target_lang}\tbloques={total}\tproceso={duracion_proceso:.0f}s\tip={ip}")
+    logging.info(f"TRADUCCION\t{nombre_srt}\t{source_lang}->{target_lang}\tbloques={total}\t"
+                 f"retraducidos={len(retraducidos)}\ta_revisar={len(a_revisar)}\tproceso={duracion_proceso:.0f}s\tip={ip}")
 
-    return path_salida, f"Traducción completada: {total} bloques en {total_lotes} lotes ({source_lang} -> {target_lang})"
+    estado = f"Traducción completada: {total} bloques en {total_lotes} lotes ({source_lang} -> {target_lang})"
+    if retraducidos:
+        estado += f". Se repasaron {len(retraducidos)} bloques dudosos"
+    if a_revisar:
+        estado += f". Revisá a mano los bloques {', '.join(bloques[i][0] for i in a_revisar)}"
+    return path_salida, estado
 
 def procesar_en_cola(input_file, identificar, num_hablantes, max_palabras, max_segundos, min_palabras, pausa_suave,
                      request: gr.Request, progress=gr.Progress()):
