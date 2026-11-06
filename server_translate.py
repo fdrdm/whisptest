@@ -232,7 +232,7 @@ def _con_deepinfra(input_file, audio, identificar, num_hablantes, progress):
     return result, _hache(crudos) if identificar else None, f"\tcosto_usd={costo_total:.3f}{nota}", d
 
 
-def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, motor="Whisper", *, ip, progress):
+def procesar(input_file, ajustes=None, identificar=True, num_hablantes=None, motor="Whisper", *, ip, progress):
     if not input_file:
         return None
 
@@ -541,9 +541,14 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
         estado += f". Revisá a mano los bloques {', '.join(bloques[i][0] for i in a_revisar)}"
     return path_salida, estado
 
-def procesar_en_cola(input_file, motor, identificar, num_hablantes, max_palabras, max_segundos, min_palabras, pausa_suave,
+def procesar_en_cola(archivos, motor, num_hablantes, max_palabras, max_segundos, min_palabras, pausa_suave,
                      request: gr.Request, progress=gr.Progress()):
-    if not input_file:
+    """Un trabajo por archivo, todos a la cola de una; espera cada uno y devuelve todos los SRT.
+
+    Siempre identifica hablantes: los nombres se ponen después (panel Hablantes o editor).
+    """
+    archivos = [archivos] if isinstance(archivos, str) else list(archivos or [])
+    if not archivos:
         return None
     if motor == "Nemotron" and not nemotron.disponible():
         raise gr.Error("Nemotron no está instalado en este servidor (falta llama-server o el modelo): corré setup.sh.")
@@ -551,9 +556,20 @@ def procesar_en_cola(input_file, motor, identificar, num_hablantes, max_palabras
         raise gr.Error("Falta la clave de DeepInfra (DEEPINFRA_API_KEY en ~/.config/whisptest.env).")
     ajustes = _ajustes(max_palabras, max_segundos, min_palabras, pausa_suave)
     cantidad = int(num_hablantes) if str(num_hablantes).isdigit() else None
-    t = cola.encolar("Transcribir", os.path.basename(input_file), procesar,
-                     (input_file, ajustes, identificar, cantidad, motor), cola.ip(request))
-    return cola.esperar(t, progress)
+    trabajos = [cola.encolar("Transcribir", os.path.basename(a), procesar, (a, ajustes, True, cantidad, motor),
+                             cola.ip(request)) for a in archivos]
+    listos, errores = [], []
+    for i, t in enumerate(trabajos, 1):
+        prefijo = f"Archivo {i} de {len(trabajos)} · " if len(trabajos) > 1 else ""
+        try:
+            listos += cola.esperar(t, lambda f, desc="": progress(f, desc=prefijo + desc)) or []
+        except gr.Error as e:  # que un archivo que falla no corte la espera de los demás
+            errores.append(f"{t.archivo}: {e.message}")
+    if errores and not listos:
+        raise gr.Error("\n".join(errores))
+    if errores:
+        gr.Warning("No se pudieron transcribir: " + "; ".join(errores))
+    return listos
 
 # ===================== REARMAR LOOPS =====================
 # No pasa por la cola: no usa GPU y tarda milisegundos.
@@ -629,7 +645,8 @@ def build_tabs(demo):
     with gr.Tab("Transcribir") as tab_transcribir:
         with gr.Row(equal_height=True):
             input_data = gr.File(
-                label="Subí tu Video o Audio (.mp3, .wav, .m4a, .aac, .flac, .ogg, .mp4, .mkv, etc.)",
+                label="Subí uno o varios videos o audios (.mp3, .wav, .m4a, .mp4, .mkv, etc.): van todos a la cola",
+                file_count="multiple",
                 file_types=[
                     "video", "audio",
                     ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".wma",
@@ -643,11 +660,10 @@ def build_tabs(demo):
                                  info="Whisper: rápido · Nemotron: mejores hablantes, ~2 min cada 10 de audio · "
                                       "DeepInfra: Nemotron en la nube, ~USD 0,04 cada 20 min. "
                                       "Los Nemotron numeran los hablantes de nuevo cada 10 min.")
-                with gr.Row():
-                    identificar = gr.Checkbox(True, label="Identificar hablantes",
-                                              info="\"Nombre: texto\" en el .nombres.srt")
-                    num_hablantes = gr.Dropdown(["Automático"] + [str(n) for n in range(1, 11)], value="Automático",
-                                                label="Cantidad de hablantes", info="Si la sabés, mejora la precisión")
+                num_hablantes = gr.Dropdown(["Automático"] + [str(n) for n in range(1, 11)], value="Automático",
+                                            label="Cantidad de hablantes",
+                                            info="Si la sabés, mejora la precisión. Los nombres se ponen después, "
+                                                 "en Hablantes o en el editor.")
 
         d = AJUSTES_DEF
         with gr.Accordion("Ajustes de loops", open=False):
@@ -726,7 +742,7 @@ def build_tabs(demo):
             lambda: gr.update(visible=True), None, output_srt, show_progress="hidden",  # ahí se ve el avance
         ).then(
             fn=procesar_en_cola,
-            inputs=[input_data, motor, identificar, num_hablantes, *ajustes],
+            inputs=[input_data, motor, num_hablantes, *ajustes],
             outputs=[output_srt],
             concurrency_limit=None,  # la GPU la serializa cola.py
         ).success(al_terminar, [output_srt, refresco], [elegido, output_srt, resumen, vista, refresco])

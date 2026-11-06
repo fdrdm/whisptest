@@ -55,6 +55,9 @@ video { width: 100%; max-height: 52vh; background: #000; border-radius: 8px; dis
 .velocidad button.activo { background: var(--verde); border-color: var(--verde); color: #fff; }
 .hablante .info { background: none; border: 0; padding: 0; text-decoration: underline dotted; }
 .hablante .info:hover { color: var(--verde-claro); }
+.combinar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--borde); }
+.combinar select { flex: 1; min-width: 0; }
 
 #filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px;
   border-bottom: 1px solid var(--borde); position: sticky; top: 0; background: var(--panel); z-index: 1; }
@@ -181,7 +184,11 @@ function dibujarHablantes() {
       <span class="tecla">${i < 9 ? i + 1 : ""}</span>
       <input type="text" data-h="${h}" value="${(hablantes[h].nombre || "").replace(/"/g, "&quot;")}" placeholder="Hablante ${h.slice(1)}">
       ${hablantes[h].muestra ? `<button data-muestra="${h}" title="Escuchar muestra">▶</button>` : "<span></span>"}
-      <button class="info" data-filtrar="${h}" title="Ver solo sus líneas">${cuenta[h] || 0} loops</button></div>`).join("");
+      <button class="info" data-filtrar="${h}" title="Ver solo sus líneas">${cuenta[h] || 0} loops</button></div>`).join("")
+    + (orden().length > 1 ? `<div class="combinar" title="Todos los loops del primero pasan al segundo">
+      <span class="atajos">Combinar</span><select id="combinar-de">${opcionesHablantes(orden()[orden().length - 1])}</select>
+      <span class="atajos">con</span><select id="combinar-en">${opcionesHablantes(orden()[0])}</select>
+      <button id="combinar">Combinar</button></div>` : "");
   $("hablantes").querySelectorAll("input[type=text]").forEach((inp) => {
     inp.addEventListener("input", () => {
       hablantes[inp.dataset.h].nombre = inp.value; marcar();
@@ -198,6 +205,23 @@ function dibujarHablantes() {
   $("hablantes").querySelectorAll("[data-muestra]").forEach((b) => b.addEventListener("click", () =>
     new Audio(`api/editor/muestra?srt=${encodeURIComponent(srt)}&h=${b.dataset.muestra}`).play()));
   $("todos").addEventListener("change", (e) => { todos = e.target.checked; marcar(); });
+  $("combinar")?.addEventListener("click", () => combinar($("combinar-de").value, $("combinar-en").value));
+}
+
+function opcionesHablantes(actual) {
+  return orden().map((h) => `<option value="${h}"${h === actual ? " selected" : ""}>${esc(etiqueta(h))}</option>`).join("");
+}
+
+// Una misma persona partida en dos (o Nemotron que la numeró distinto en cada tramo de 10 min)
+function combinar(de, en) {
+  if (de === en) { estado("Elegí dos hablantes distintos para combinar.", true); return; }
+  const antes = etiqueta(de);
+  loops.forEach((l) => { if (l.hablante === de) { l.hablante = en; l.cambiado = true; } });
+  if (!hablantes[en].nombre) hablantes[en].nombre = hablantes[de].nombre;
+  delete hablantes[de];
+  if (filtro === de) filtro = en;
+  dibujarHablantes(); dibujarLoops(); aplicarFiltro(); marcar();
+  estado(`${antes} combinado con ${etiqueta(en)} · cambios sin guardar`);
 }
 
 function dibujarLoops() {
