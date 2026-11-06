@@ -47,8 +47,9 @@ HEAD_HTML = """
     bottom: 24px;
     right: 24px;
     z-index: 999999;
-    background: #1e293b;
-    color: #f8fafc;
+    background: #141414;
+    color: #f4faf8;
+    border-left: 3px solid #038169;
     padding: 16px 20px;
     border-radius: 12px;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -284,7 +285,7 @@ def setup_chunked_upload(demo: gr.Blocks, app: FastAPI, output_dir: str = None):
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
-def launch_server(demo: gr.Blocks, port: int, allowed_paths: list = None):
+def launch_server(demo: gr.Blocks, port: int, allowed_paths: list = None, theme=None):
     """Monta Gradio sobre FastAPI con soporte para chunked uploads y ejecuta uvicorn."""
     app = FastAPI()
     setup_chunked_upload(demo, app)
@@ -294,5 +295,6 @@ def launch_server(demo: gr.Blocks, port: int, allowed_paths: list = None):
         path="/",
         allowed_paths=allowed_paths,
         head=HEAD_HTML,
+        theme=theme,
     )
     uvicorn.run(mounted_app, host="0.0.0.0", port=port)

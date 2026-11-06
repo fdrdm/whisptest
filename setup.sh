@@ -41,6 +41,33 @@ else
 fi
 
 echo "=========================================="
+echo "🎙️ Nemotron 3.5 Transcribe (llama.cpp + modelo GGUF)..."
+echo "=========================================="
+
+# llama-cpp-python todavía no trae el audio de Nemotron: se compila llama-server.
+# Commit probado (el soporte de Nemotron Transcribe entró en master el 2026-11-03).
+LLAMA_DIR="${LLAMA_DIR:-$HOME/llama.cpp}"
+LLAMA_COMMIT="e14a779719652200cec7ad58dfa4820edc347182"
+NEMOTRON_DIR="${NEMOTRON_DIR:-$HOME/modelos/nemotron-transcribe}"
+NEMOTRON_REPO="maternion/Nemotron-3.5-Transcribe-30B-A4B-IQ-GGUF"
+
+if [ ! -x "$LLAMA_DIR/build/bin/llama-server" ]; then
+    [ -d "$LLAMA_DIR" ] || git clone https://github.com/ggml-org/llama.cpp "$LLAMA_DIR"
+    git -C "$LLAMA_DIR" fetch origin && git -C "$LLAMA_DIR" checkout "$LLAMA_COMMIT"
+    cmake -S "$LLAMA_DIR" -B "$LLAMA_DIR/build" -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=native -DCMAKE_BUILD_TYPE=Release
+    # La mitad de los núcleos: compilar CUDA con todos puede quedarse sin RAM
+    cmake --build "$LLAMA_DIR/build" -j "$(( $(nproc) / 2 ))" --target llama-server
+else
+    echo "✔ llama-server ya está compilado en $LLAMA_DIR"
+fi
+
+# ~20 GB: el modelo IQ4_NL (los expertos van a RAM, el resto a VRAM) y el codificador de audio
+.venv/bin/hf download "$NEMOTRON_REPO" \
+    NVIDIA-Nemotron-3.5-Transcribe-30B-A4B-IQ4_NL.gguf \
+    mmproj-NVIDIA-Nemotron-3.5-Transcribe-30B-A4B-F16.gguf \
+    --local-dir "$NEMOTRON_DIR"
+
+echo "=========================================="
 echo "✅ ¡Entorno virtual y Ollama preparados con éxito!"
 echo "💡 Para activar el entorno manualmente ejecuta: source .venv/bin/activate"
 echo "=========================================="

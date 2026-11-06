@@ -183,6 +183,8 @@ def _leer_log():
                 tipo, archivo, estado = TIPOS[accion], partes[2], "ok"
                 if accion == "TRANSCRIPCION":
                     detalle = f"idioma {partes[3]}" if len(partes) > 3 else ""
+                    if campos.get("motor") == "nemotron":
+                        detalle += " · Nemotron"
                 elif accion == "TRADUCCION":
                     detalle = partes[3].replace("->", " → ") if len(partes) > 3 else ""
                 else:

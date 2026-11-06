@@ -58,6 +58,14 @@ Con **Identificar hablantes** (activado por defecto) el trabajo de transcripció
 
 Requiere aceptar los términos del modelo en Hugging Face y un token en `~/.cache/huggingface/token` solo para la primera descarga.
 
+## 🎙️ Nemotron (`nemotron.py`)
+
+En **Transcribir → Motor** se puede elegir NVIDIA Nemotron 3.5 Transcribe en vez de Whisper. Tarda más (unos 2 min cada 10 de audio; hasta 1 hora por archivo), pero detecta solo los hablantes (no usa pyannote) y suele separar mejor quién dice cada frase. Nemotron no da tiempos: su texto se alinea con Whisper (`model.align`, ~30 s cada 10 min, ~10 ms de diferencia con los tiempos de Whisper) y desde ahí todo es igual: JSON de palabras, hablantes, loops y **Rearmar**.
+
+- Corre local con `llama-server` de llama.cpp, que se levanta por trabajo en el puerto 8091 y se baja al terminar (carga en ~5 s). Los expertos del MoE van a RAM (~10–12 GB) y el resto a VRAM (~3,6 GB). El servidor corre dentro de un scope de systemd con tope de 30 GB de RAM: si se pasa, se mata solo ese proceso y no se cuelga la PC. Su salida va a `nemotron.log`.
+- No hay paquete de pip que sirva todavía (`llama-cpp-python` no trae el audio de Nemotron), así que `setup.sh` compila llama.cpp (commit fijado) en `~/llama.cpp` y baja el modelo IQ4_NL + `mmproj` F16 (~20 GB) de `maternion/Nemotron-3.5-Transcribe-30B-A4B-IQ-GGUF` a `~/modelos/nemotron-transcribe`. Otras rutas: `NEMOTRON_LLAMA_SERVER` y `NEMOTRON_DIR`.
+- Usa los prompts oficiales del model card, con el texto antes del audio (con otro prompt el modelo resume o se queda en bucle en audios largos).
+
 ## 🎛️ Manejo de VRAM (`gpu.py`)
 
 - Una sola cola de trabajos (`cola.py`): transcripción, traducción y separación se procesan de a una, en orden de llegada, y siguen aunque quien los mandó cierre la página. La pestaña **Cola** muestra todos los trabajos y deja bajar los resultados de los terminados o cancelar uno (en espera sale de la cola; si ya corre, se detiene en el próximo segmento, bloque o lote). La cola vive en memoria: reiniciar el servicio pierde los trabajos en espera.

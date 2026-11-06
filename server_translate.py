@@ -14,6 +14,7 @@ import cola
 import gpu
 import hablantes
 import loops
+import nemotron
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, "output_translate")
@@ -106,22 +107,73 @@ def palabras_json(path_srt):
     nombre = os.path.splitext(os.path.basename(path_srt))[0] + ".json"
     return os.path.join(OUTPUT_DIR, "palabras", nombre)
 
-def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, *, ip, progress):
+def _con_nemotron(audio, identificar, num_hablantes, progress):
+    """Texto de Nemotron + tiempos alineando ese texto con Whisper. Devuelve (result, etiquetas o None)."""
+    with gpu.trabajo("nemotron"):
+        crudo = nemotron.transcribir(audio, nemotron.prompt(identificar, num_hablantes),
+                                     lambda f, desc="": progress(0.8 * f, desc=desc))
+        vram = nemotron.vram_gb()
+
+    # Tramos (hablante, texto) según las etiquetas <spk:N>; el texto de antes de la primera va con ella
+    partes = re.split(r"<spk:(\d+)>", crudo)
+    tramos = [(partes[i], partes[i + 1].strip()) for i in range(1, len(partes) - 1, 2)]
+    if partes[0].strip() or not tramos:
+        tramos.insert(0, (tramos[0][0] if tramos else "0", partes[0].strip()))
+    tramos = [(h, t) for h, t in tramos if t]
+    if not tramos:
+        raise gr.Error("Nemotron no encontró habla en el audio.")
+    texto, limites = "", []  # limites: (carácter donde termina el tramo, hablante)
+    for h, t in tramos:
+        texto += (" " if texto else "") + t
+        limites.append((len(texto), h))
+
+    progress(0.8, desc="Sincronizando con el audio...")
+    with gpu.trabajo("whisper"):
+        model = _get_whisper()
+        mel = whisper.log_mel_spectrogram(whisper.pad_or_trim(audio), model.dims.n_mels).to(model.device)
+        _, probs = model.detect_language(mel)
+        result = model.align(
+            audio, texto, language=max(probs, key=probs.get),
+            progress_callback=lambda hecho, total: progress(0.8 + 0.2 * hecho / total if total else 0.8,
+                                                            desc="Sincronizando con el audio..."),
+        )
+        del model
+
+    etiquetas = None
+    if identificar:
+        # Hablante de cada palabra según en qué tramo cae su mitad; H1, H2... por orden de aparición
+        orden, etiquetas, pos, k = {}, [], 0, 0
+        for w in result.all_words():
+            while k < len(limites) - 1 and pos + len(w.word) / 2 > limites[k][0]:
+                k += 1
+            etiquetas.append(orden.setdefault(limites[k][1], f"H{len(orden) + 1}"))
+            pos += len(w.word)
+    return result, etiquetas, vram
+
+
+def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, motor="Whisper", *, ip, progress):
     if not input_file:
         return None
 
     # 1. Transcripción cruda (Gradio captura la barra de tqdm de Whisper)
     t0 = time.time()
-    parte_whisper = 0.8 if identificar else 1.0
-    with gpu.trabajo("whisper"):
-        model = _get_whisper()
-        result = model.transcribe(
-            input_file,
-            progress_callback=lambda hecho, total: progress(parte_whisper * hecho / total if total else 0,
-                                                            desc="Transcribiendo..."),
-        )
-        del model  # que gpu.trabajo pueda liberarlo antes de pyannote
-    vram_pico = gpu.pico_gb()
+    audio, etiquetas, extra = None, None, ""
+    if motor == "Nemotron":
+        audio = whisper.load_audio(input_file)
+        result, etiquetas, vram_nemotron = _con_nemotron(audio, identificar, num_hablantes, progress)
+        vram_pico = gpu.pico_gb()  # la alineación con Whisper
+        extra = f"\tvram_nemotron={vram_nemotron:.1f}GB"
+    else:
+        parte_whisper = 0.8 if identificar else 1.0
+        with gpu.trabajo("whisper"):
+            model = _get_whisper()
+            result = model.transcribe(
+                input_file,
+                progress_callback=lambda hecho, total: progress(parte_whisper * hecho / total if total else 0,
+                                                                desc="Transcribiendo..."),
+            )
+            del model  # que gpu.trabajo pueda liberarlo antes de pyannote
+        vram_pico = gpu.pico_gb()
     duracion_total = result.duration or 0
     idioma_detectado = result.language or "autodetectado"
     nombre_base = os.path.splitext(os.path.basename(input_file))[0]
@@ -140,12 +192,13 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, *,
         os.remove(path_hablantes)  # de una transcripción anterior del mismo video
     cantidad = ""
     if identificar and todas_las_palabras:
-        audio = whisper.load_audio(input_file)
-        turnos = hablantes.diarizar(
-            audio, num_hablantes,
-            progress=lambda f, desc="": progress(parte_whisper + (1 - parte_whisper) * f, desc=desc),
-        )
-        etiquetas = hablantes.asignar(todas_las_palabras, turnos)
+        if etiquetas is None:  # Whisper: los hablantes salen de pyannote (Nemotron ya los trae)
+            audio = whisper.load_audio(input_file)
+            turnos = hablantes.diarizar(
+                audio, num_hablantes,
+                progress=lambda f, desc="": progress(parte_whisper + (1 - parte_whisper) * f, desc=desc),
+            )
+            etiquetas = hablantes.asignar(todas_las_palabras, turnos)
         cantidad = f"\thablantes={len(hablantes.guardar(path_hablantes, todas_las_palabras, etiquetas, audio))}"
         vram_pico = max(vram_pico, gpu.pico_gb())
 
@@ -155,7 +208,7 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, *,
     # Log
     duracion_habla = lista_loops[-1][-1].end if lista_loops else 0
     duracion_proceso = time.time() - t0
-    logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(lista_loops)}{cantidad}\tvram_pico={vram_pico:.1f}GB\tip={ip}")
+    logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\tmotor={motor.lower()}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(lista_loops)}{cantidad}\tvram_pico={vram_pico:.1f}GB{extra}\tip={ip}")
 
     return path_srt
 
@@ -386,14 +439,16 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
         estado += f". Revisá a mano los bloques {', '.join(bloques[i][0] for i in a_revisar)}"
     return path_salida, estado
 
-def procesar_en_cola(input_file, identificar, num_hablantes, max_palabras, max_segundos, min_palabras, pausa_suave,
+def procesar_en_cola(input_file, motor, identificar, num_hablantes, max_palabras, max_segundos, min_palabras, pausa_suave,
                      request: gr.Request, progress=gr.Progress()):
     if not input_file:
         return None
+    if motor == "Nemotron" and not nemotron.disponible():
+        raise gr.Error("Nemotron no está instalado en este servidor (falta llama-server o el modelo): corré setup.sh.")
     ajustes = _ajustes(max_palabras, max_segundos, min_palabras, pausa_suave)
     cantidad = int(num_hablantes) if str(num_hablantes).isdigit() else None
     t = cola.encolar("Transcribir", os.path.basename(input_file), procesar,
-                     (input_file, ajustes, identificar, cantidad), cola.ip(request))
+                     (input_file, ajustes, identificar, cantidad, motor), cola.ip(request))
     return cola.esperar(t, progress)
 
 # ===================== REARMAR LOOPS =====================
@@ -475,8 +530,11 @@ def build_tabs(demo):
         )
 
         with gr.Row():
+            motor = gr.Radio(["Whisper", "Nemotron"], value="Whisper", label="Motor",
+                             info="Whisper: rápido. Nemotron: más lento (~2 min cada 10 de audio, hasta 1 hora), "
+                                  "detecta los hablantes él mismo.")
             identificar = gr.Checkbox(True, label="Identificar hablantes",
-                                      info="Pone \"Nombre: texto\" en el SRT (pyannote). Suma unos 15 s.")
+                                      info="Pone \"Nombre: texto\" en el SRT (con Whisper usa pyannote, suma unos 15 s).")
             num_hablantes = gr.Dropdown(["Automático"] + [str(n) for n in range(1, 11)], value="Automático",
                                         label="Cantidad de hablantes", info="Si la sabés, mejora la precisión")
 
@@ -548,7 +606,7 @@ def build_tabs(demo):
 
         btn_transcribir.click(
             fn=procesar_en_cola,
-            inputs=[input_data, identificar, num_hablantes, *ajustes],
+            inputs=[input_data, motor, identificar, num_hablantes, *ajustes],
             outputs=[output_srt],
             concurrency_limit=None,  # la GPU la serializa cola.py
         ).success(al_terminar, [output_srt, refresco], [elegido, resumen, vista, refresco])

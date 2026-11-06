@@ -1,4 +1,4 @@
-"""Coordinación de VRAM entre Whisper, Demucs y Ollama.
+"""Coordinación de VRAM entre Whisper, Demucs, pyannote, Nemotron y Ollama.
 
 Todo corre en un solo proceso con una única cola de GPU (concurrency_id="gpu"),
 así que nunca hay dos trabajos a la vez. Además:
@@ -21,7 +21,7 @@ GB = 1024 ** 3
 VRAM_LIMIT_GB = float(os.environ.get("WHISPTEST_VRAM_GB", "5"))
 MARGEN_GB = 1.0  # siempre libre para escritorio y navegador
 # Pico estimado por modelo; calibrar con el campo vram_pico de uso.log
-NECESARIO_GB = {"whisper": 3.5, "demucs": 3.0, "pyannote": 1.0}  # medido: whisper 3,5 GB (35 min), demucs_ft 2,4 GB (bloques de 3 min), pyannote 0,6 GB (lotes de 8)
+NECESARIO_GB = {"whisper": 3.5, "demucs": 3.0, "pyannote": 1.0, "nemotron": 5.0}  # medido: whisper 3,5 GB (35 min), demucs_ft 2,4 GB (bloques de 3 min), pyannote 0,6 GB (lotes de 8), nemotron 4,6 GB (30 min; es otro proceso, fuera del límite de PyTorch)
 OLLAMA_URL = "http://localhost:11434"
 
 _modelos = {}  # nombre -> (descargar, esta_cargado)
@@ -151,5 +151,5 @@ def estado_html():
     else:
         app = "sin modelos cargados"
     ollama = ", ".join(f"{n} ({g:.1f} GB)" for n, g in _modelos_ollama()) or "nada cargado"
-    color = "#22c55e" if cargados else "#6b7280"
+    color = "#04a487" if cargados else "#6b7280"
     return _indicador(color, f"VRAM {usada:.1f}/{total:.1f} GB · App: {app} · Ollama: {ollama}")
