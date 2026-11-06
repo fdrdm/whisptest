@@ -49,8 +49,9 @@ def _clasificar(nombre):
     raiz, ext = os.path.splitext(nombre)
     if ext == ".srt":
         # video_en.nemotron.nombres.srt → ("video", "SRT en Nemotron con nombres")
-        raiz, extras = re.fullmatch(r"(.*?)((?:\.(?:whisper|nemotron|nombres))*)", raiz).groups()
-        detalle = "".join({"whisper": " Whisper", "nemotron": " Nemotron", "nombres": " con nombres"}[e]
+        raiz, extras = re.fullmatch(r"(.*?)((?:\.(?:whisper|nemotron|deepinfra|nombres))*)", raiz).groups()
+        detalle = "".join({"whisper": " Whisper", "nemotron": " Nemotron", "deepinfra": " DeepInfra",
+                           "nombres": " con nombres"}[e]
                           for e in extras.split(".") if e)
         m = re.match(r"^(.*)_([A-Za-z]{2,3}(?:-[A-Za-z]{2})?)$", raiz)
         return (m.group(1), f"SRT {m.group(2)}{detalle}") if m else (raiz, f"SRT{detalle}")
@@ -135,7 +136,7 @@ def build_archivos():
             value=tabla_archivos,
             interactive=False,
             wrap=True,
-            max_height=420,
+            max_height=760,
             column_widths=["55%", "20%", "15%", "10%"],
         )
 
@@ -187,8 +188,10 @@ def _leer_log():
                 tipo, archivo, estado = TIPOS[accion], partes[2], "ok"
                 if accion == "TRANSCRIPCION":
                     detalle = f"idioma {partes[3]}" if len(partes) > 3 else ""
-                    if campos.get("motor") == "nemotron":
-                        detalle += " · Nemotron"
+                    if campos.get("motor") in ("nemotron", "deepinfra"):
+                        detalle += {"nemotron": " · Nemotron", "deepinfra": " · DeepInfra"}[campos["motor"]]
+                    if campos.get("costo_usd"):
+                        detalle += f" · USD {campos['costo_usd']}"
                 elif accion == "TRADUCCION":
                     detalle = partes[3].replace("->", " → ") if len(partes) > 3 else ""
                 else:

@@ -7,6 +7,7 @@ Un trabajo en espera se puede sacar de la cola; uno que ya corre se detiene en s
 próximo aviso de progreso (cada segmento, bloque o lote).
 La cola vive en memoria: reiniciar el servicio pierde los trabajos en espera.
 """
+import html
 import itertools
 import logging
 import os
@@ -178,13 +179,26 @@ def tabla():
 
 
 def resumen_html():
+    """Estado de la cola para el encabezado; el punto late mientras hay un trabajo en curso."""
     with _lock:
         actual = next((t for t in _trabajos if t.estado == "procesando"), None)
     esperando = len(_en_espera())
     if not actual and not esperando:
-        return "<div>Cola: vacía</div>"
-    texto = f"procesando #{actual.id} ({actual.tipo}, {actual.progreso:.0%})" if actual else "arrancando"
-    return f"<div>Cola: {texto} · {esperando} en espera</div>"
+        return '<div class="estado-cola"><span class="punto"></span>Libre: lo que mandes empieza enseguida</div>'
+    texto = (f"Procesando #{actual.id} · {actual.tipo} · {html.escape(actual.archivo)} · {actual.progreso:.0%}"
+             if actual else "Arrancando")
+    if esperando:
+        texto += f" · {esperando} en espera"
+    return f'<div class="estado-cola ocupada"><span class="punto"></span>{texto}</div>'
+
+
+def etiqueta_boton(base):
+    """Texto de un botón de enviar: si ya hay trabajos, que se entienda que el nuevo va a la cola."""
+    with _lock:
+        antes = sum(t.estado in ("procesando", "en espera") for t in _trabajos)
+    if not antes:
+        return base
+    return f"Agregar a la cola ({antes} {'trabajo' if antes == 1 else 'trabajos'} antes)"
 
 
 def build_tab():
@@ -206,16 +220,18 @@ def build_tab():
         with gr.Row():
             info = gr.Markdown("Ningún trabajo elegido.")
             btn_cancelar = gr.Button("Cancelar trabajo elegido", variant="stop", scale=0)
-        resultados = gr.File(label="Resultados del trabajo elegido", file_count="multiple", interactive=False)
+        resultados = gr.File(label="Resultados del trabajo elegido", file_count="multiple", interactive=False,
+                             visible=False)
 
         def on_select(evt: gr.SelectData):
             id_trabajo = evt.row_value[0] if evt.row_value else None
             with _lock:
                 t = next((x for x in _trabajos if x.id == id_trabajo), None)
             if not t:
-                return None, None, "Ningún trabajo elegido."
+                return gr.update(value=None, visible=False), None, "Ningún trabajo elegido."
             archivos = t.archivos() if t.estado == "listo" else None
-            return archivos, t.id, f"Elegido: **#{t.id}** {t.tipo} · {t.archivo} · {t.estado}"
+            return (gr.update(value=archivos, visible=bool(archivos)), t.id,
+                    f"Elegido: **#{t.id}** {t.tipo} · {t.archivo} · {t.estado}")
 
         def on_cancelar(id_trabajo):
             return cancelar(id_trabajo), tabla()

@@ -11,8 +11,13 @@ llama.cpp el 2026-11-03), por eso se usa el binario compilado (ver setup.sh).
 
 transcribir() solo habla con una API compatible con OpenAI, así que el servidor local se
 puede cambiar por uno remoto sin tocar el resto.
+
+deepinfra() usa en cambio el modelo completo (BF16) alojado en DeepInfra, que ya devuelve cada
+palabra con sus tiempos y su hablante. Necesita DEEPINFRA_API_KEY en el entorno del servicio
+(~/.config/whisptest.env, nunca en el repo).
 """
 import base64
+import concurrent.futures
 import io
 import json
 import logging
@@ -34,8 +39,9 @@ MODELO = "NVIDIA-Nemotron-3.5-Transcribe-30B-A4B-IQ4_NL.gguf"
 MMPROJ = "mmproj-NVIDIA-Nemotron-3.5-Transcribe-30B-A4B-F16.gguf"
 PUERTO = 8091
 URL = f"http://127.0.0.1:{PUERTO}"
-CONTEXTO = 65536       # el del modelo: alcanza para 1 hora de audio
-MAX_SEGUNDOS = 3600    # límite oficial del modelo
+CONTEXTO = 16384       # un tramo de 10 min usa ~7400 de audio + ~2000 de texto (con 65536: +0,3 GB de VRAM)
+MAX_SEGUNDOS = 3600    # límite oficial del modelo (por pedido: el local va en tramos de TRAMO_SEG)
+TRAMO_SEG = 600        # como DeepInfra: tramos de ~10 min, más estables y sin límite de duración
 RAM_MAX = "30G"        # medido: 12,4 GB con 30 min de audio
 LOG_SERVIDOR = os.path.join(BASE_DIR, "nemotron.log")
 SR = 16000
@@ -140,6 +146,18 @@ def _wav(audio):
     return buf.getvalue()
 
 
+def tramos(audio, largo=TRAMO_SEG, busqueda=60, ventana=0.5):
+    """[(desde, hasta)] en muestras: tramos de ~largo segundos cortados en el medio segundo más
+    silencioso del último minuto de cada uno, para no partir palabras."""
+    cortes, n = [0], int(ventana * SR)
+    while len(audio) - cortes[-1] > largo * SR:
+        a = cortes[-1] + (largo - busqueda) * SR
+        trozo = audio[a:a + busqueda * SR]
+        energia = (trozo[:len(trozo) // n * n].reshape(-1, n) ** 2).mean(1)
+        cortes.append(a + int(energia.argmin()) * n + n // 2)
+    return list(zip(cortes, cortes[1:] + [len(audio)]))
+
+
 def prompt(hablantes, cantidad=None):
     if not hablantes:
         return PROMPT_TEXTO
@@ -215,3 +233,74 @@ def transcribir(audio, texto_prompt, progress, url=URL):
     except _Bucle:
         raise RuntimeError("Nemotron se quedó repitiendo aun con penalización de repeticiones. "
                            "Probá con Whisper para este archivo.")
+
+
+# ===================== DEEPINFRA =====================
+# Usa el endpoint propio de DeepInfra (multipart), no el de OpenAI ni OpenRouter: solo ahí se
+# puede pedir diarize, que da el hablante de cada palabra.
+
+DEEPINFRA_URL = "https://api.deepinfra.com/v1/inference/nvidia/NVIDIA-Nemotron-3.5-Transcribe-30B-A4B"
+DEEPINFRA_WHISPER = "https://api.deepinfra.com/v1/inference/openai/whisper-large-v3-turbo"
+
+
+def deepinfra_disponible():
+    return bool(os.environ.get("DEEPINFRA_API_KEY"))
+
+
+def _ogg(input_file, desde=0, duracion=None):
+    """Audio en opus mono 16 kHz (~4 MB cada 20 min): DeepInfra rechaza archivos pesados."""
+    tramo = ["-ss", str(desde)] + (["-t", str(duracion)] if duracion else [])
+    r = subprocess.run(["ffmpeg", "-loglevel", "error", *tramo, "-i", input_file, "-vn", "-sn", "-dn", "-ac", "1",
+                        "-ar", str(SR), "-c:a", "libopus", "-b:a", "32k", "-f", "ogg", "pipe:1"],
+                       capture_output=True)
+    if r.returncode != 0:
+        raise RuntimeError(f"No se pudo leer el audio: {r.stderr.decode(errors='replace')[-300:]}")
+    return r.stdout
+
+
+def deepinfra(input_file, segundos, cantidad, progress):
+    """Respuesta de DeepInfra: {"words": [{"word", "start", "end", "speaker"}...], "inference_status": {"cost"...}}.
+
+    Siempre con diarize y la instrucción con <spk:N>: sin eso devuelve una sola voz (y sin
+    diarize, en Daria 101 perdió un cuarto de las palabras). Los hablantes vienen numerados
+    de nuevo en cada tramo de ~10 min que corta DeepInfra.
+    """
+    progress(0, desc="Preparando el audio para DeepInfra...")
+    audio = _ogg(input_file)
+    datos = {"chunk_level": "word", "diarize": "true", "instruction": prompt(True, cantidad)}
+    ex = concurrent.futures.ThreadPoolExecutor(1)
+    pedido = ex.submit(_pedir, DEEPINFRA_URL, audio, datos, 1800)
+    ex.shutdown(wait=False)  # al cancelar no se espera la respuesta (DeepInfra la cobra igual)
+    t0 = time.time()
+    # No hay avance real: se estima (Daria 101: 114 s para 21 min de audio)
+    while not pedido.done():
+        s = int(time.time() - t0)
+        progress(min(s / (segundos * 0.1 + 30), 0.95), desc=f"Nemotron (DeepInfra) transcribiendo... {s // 60}:{s % 60:02d}")
+        time.sleep(1)
+    return pedido.result()
+
+
+def _pedir(url, audio, datos, timeout):
+    r = requests.post(url, files={"audio": ("audio.ogg", audio, "audio/ogg")}, data=datos, timeout=timeout,
+                      headers={"Authorization": "bearer " + os.environ["DEEPINFRA_API_KEY"]})
+    if not r.ok:
+        raise RuntimeError(f"DeepInfra respondió {r.status_code}: {r.text[:300]}")
+    return r.json()
+
+
+def deepinfra_idioma(input_file, desde):
+    """(idioma, costo) con el Whisper de DeepInfra sobre 30 s de audio desde `desde` (~USD 0,0001)."""
+    d = _pedir(DEEPINFRA_WHISPER, _ogg(input_file, desde, 30), {}, 120)
+    return d.get("language") or "", d.get("inference_status", {}).get("cost", 0)
+
+
+def tiempos_sanos(palabras):
+    """False si los tiempos se rompieron (pasó en 1 de 6 audios: desde cierto minuto se amontonan
+    y se desordenan). Entonces el texto se alinea con Whisper como con el Nemotron local."""
+    if not palabras:
+        return False
+    hacia_atras = sum(b["start"] < a["start"] - 0.5 for a, b in zip(palabras, palabras[1:]))
+    inicios = [w["start"] for w in palabras]
+    # Nadie dice más de 8 palabras por segundo durante 10 segundos
+    amontonadas = any(inicios[i + 80] - inicios[i] < 10 for i in range(len(inicios) - 80))
+    return hacia_atras <= len(palabras) / 200 and not amontonadas

@@ -19,6 +19,8 @@ import nemotron
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, "output_translate")
+DEEPINFRA = "Nemotron (DeepInfra)"
+MOTORES = {"Whisper": "whisper", "Nemotron": "nemotron", DEEPINFRA: "deepinfra"}  # el sufijo de los archivos
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 LOG_FILE = os.path.join(BASE_DIR, "uso.log")
 
@@ -108,19 +110,24 @@ def palabras_json(path_srt):
     nombre = os.path.splitext(os.path.basename(path_srt))[0] + ".json"
     return os.path.join(OUTPUT_DIR, "palabras", nombre)
 
-def _con_nemotron(audio, identificar, num_hablantes, progress):
-    """Texto de Nemotron + tiempos alineando ese texto con Whisper. Devuelve (result, etiquetas o None)."""
-    with gpu.trabajo("nemotron"):
-        crudo = nemotron.transcribir(audio, nemotron.prompt(identificar, num_hablantes),
-                                     lambda f, desc="": progress(0.8 * f, desc=desc))
-        vram = nemotron.vram_gb()
+def _idioma(model, audio):
+    mel = whisper.log_mel_spectrogram(whisper.pad_or_trim(audio), model.dims.n_mels).to(model.device)
+    _, probs = model.detect_language(mel)
+    return max(probs, key=probs.get)
 
-    # Tramos (hablante, texto) según las etiquetas <spk:N>; el texto de antes de la primera va con ella
-    partes = re.split(r"<spk:(\d+)>", crudo)
-    tramos = [(partes[i], partes[i + 1].strip()) for i in range(1, len(partes) - 1, 2)]
-    if partes[0].strip() or not tramos:
-        tramos.insert(0, (tramos[0][0] if tramos else "0", partes[0].strip()))
-    tramos = [(h, t) for h, t in tramos if t]
+
+def _hache(hablantes_crudos):
+    """Etiquetas H1, H2... por orden de aparición."""
+    orden = {}
+    return [orden.setdefault(h, f"H{len(orden) + 1}") for h in hablantes_crudos]
+
+
+def _alinear(audio, tramos, progress, desde):
+    """Tiempos para el texto de Nemotron alineándolo con Whisper.
+
+    tramos: [(hablante, texto)] en orden. Devuelve (result, hablante crudo de cada palabra).
+    """
+    tramos = [(h, t.strip()) for h, t in tramos if t.strip()]
     if not tramos:
         raise gr.Error("Nemotron no encontró habla en el audio.")
     texto, limites = "", []  # limites: (carácter donde termina el tramo, hablante)
@@ -128,28 +135,98 @@ def _con_nemotron(audio, identificar, num_hablantes, progress):
         texto += (" " if texto else "") + t
         limites.append((len(texto), h))
 
-    progress(0.8, desc="Sincronizando con el audio...")
+    progress(desde, desc="Sincronizando con el audio...")
     with gpu.trabajo("whisper"):
         model = _get_whisper()
-        mel = whisper.log_mel_spectrogram(whisper.pad_or_trim(audio), model.dims.n_mels).to(model.device)
-        _, probs = model.detect_language(mel)
         result = model.align(
-            audio, texto, language=max(probs, key=probs.get),
-            progress_callback=lambda hecho, total: progress(0.8 + 0.2 * hecho / total if total else 0.8,
+            audio, texto, language=_idioma(model, audio),
+            progress_callback=lambda hecho, total: progress(desde + (1 - desde) * hecho / total if total else desde,
                                                             desc="Sincronizando con el audio..."),
         )
         del model
 
-    etiquetas = None
-    if identificar:
-        # Hablante de cada palabra según en qué tramo cae su mitad; H1, H2... por orden de aparición
-        orden, etiquetas, pos, k = {}, [], 0, 0
-        for w in result.all_words():
-            while k < len(limites) - 1 and pos + len(w.word) / 2 > limites[k][0]:
-                k += 1
-            etiquetas.append(orden.setdefault(limites[k][1], f"H{len(orden) + 1}"))
-            pos += len(w.word)
-    return result, etiquetas, vram
+    # Hablante de cada palabra según en qué tramo cae su mitad
+    crudos, pos, k = [], 0, 0
+    for w in result.all_words():
+        while k < len(limites) - 1 and pos + len(w.word) / 2 > limites[k][0]:
+            k += 1
+        crudos.append(limites[k][1])
+        pos += len(w.word)
+    return result, crudos
+
+
+def _por_hablante(crudo):
+    """[(hablante, texto)] según las etiquetas <spk:N>; el texto de antes de la primera va con ella."""
+    partes = re.split(r"<spk:(\d+)>", crudo)
+    tramos = [(partes[i], partes[i + 1]) for i in range(1, len(partes) - 1, 2)]
+    if partes[0].strip() or not tramos:
+        tramos.insert(0, (tramos[0][0] if tramos else "0", partes[0]))
+    return tramos
+
+
+def _con_nemotron(audio, identificar, num_hablantes, progress):
+    """Texto de Nemotron + tiempos alineando ese texto con Whisper. Devuelve (result, etiquetas o None, vram).
+
+    Va en tramos de ~10 min como DeepInfra: los hablantes de cada tramo son distintos (al mismo
+    personaje se le pone el mismo nombre en cada uno).
+    """
+    partes = nemotron.tramos(audio)
+    tramos = []
+    with gpu.trabajo("nemotron"):
+        for k, (a, b) in enumerate(partes):
+            def avance(f, desc="", k=k):
+                progress(0.8 * (k + f) / len(partes), desc=desc + (f" (tramo {k + 1} de {len(partes)})" if len(partes) > 1 else ""))
+            crudo = nemotron.transcribir(audio[a:b], nemotron.prompt(identificar, num_hablantes), avance)
+            tramos += [(f"{k}:{h}", t) for h, t in _por_hablante(crudo)]
+        vram = nemotron.vram_gb()
+    result, crudos = _alinear(audio, tramos, progress, 0.8)
+    return result, _hache(crudos) if identificar else None, vram
+
+
+def _con_deepinfra(input_file, audio, identificar, num_hablantes, progress):
+    """Nemotron en DeepInfra: ya trae tiempos y hablante por palabra; el idioma lo da el Whisper de DeepInfra.
+
+    Nada corre local salvo que los tiempos vengan rotos. Devuelve (result, etiquetas o None, nota del log).
+    """
+    segundos = len(audio) / nemotron.SR
+    if segundos > nemotron.MAX_SEGUNDOS:
+        raise gr.Error(f"Nemotron acepta hasta {nemotron.MAX_SEGUNDOS // 60} minutos de audio; este dura "
+                       f"{segundos / 60:.0f}. Usá Whisper para este archivo.")
+    d = nemotron.deepinfra(input_file, segundos, num_hablantes, lambda f, desc="": progress(0.9 * f, desc=desc))
+    palabras = [w for w in d.get("words") or [] if w["word"].strip()]
+    costo_total, nota = d.get("inference_status", {}).get("cost", 0), ""
+    if not palabras:
+        raise gr.Error("Nemotron no encontró habla en el audio.")
+
+    if nemotron.tiempos_sanos(palabras):
+        # Idioma con el Whisper de DeepInfra, sobre 30 s desde la mitad de lo hablado (al principio suele haber música)
+        progress(0.9, desc="Detectando el idioma...")
+        idioma, costo = nemotron.deepinfra_idioma(input_file, palabras[len(palabras) // 2]["start"])
+        costo_total += costo
+        # Un segmento por tramo seguido de un mismo hablante (los loops solo usan las palabras)
+        tramos = []
+        for w in palabras:
+            p = {"word": " " + w["word"].strip(), "start": w["start"], "end": max(w["end"], w["start"]), "probability": 1.0}
+            if tramos and tramos[-1][0] == w["speaker"]:
+                tramos[-1][1].append(p)
+            else:
+                tramos.append((w["speaker"], [p]))
+        segmentos = [{"start": ps[0]["start"], "end": ps[-1]["end"], "text": "".join(p["word"] for p in ps), "words": ps}
+                     for _, ps in tramos]
+        # Con dos voces a la vez las palabras se pisan: force_order acomoda los tiempos
+        result = stable_whisper.WhisperResult({"language": idioma, "segments": segmentos}, force_order=True)
+        crudos = [w["speaker"] for w in palabras]
+    else:
+        logging.info("DEEPINFRA\ttiempos rotos: se alinea el texto con Whisper")
+        nota += "\talineado=whisper"
+        tramos = []
+        for w in palabras:
+            if tramos and tramos[-1][0] == w["speaker"]:
+                tramos[-1][1] += " " + w["word"]
+            else:
+                tramos.append([w["speaker"], w["word"]])
+        result, crudos = _alinear(audio, tramos, progress, 0.9)
+    return result, _hache(crudos) if identificar else None, f"\tcosto_usd={costo_total:.3f}{nota}"
 
 
 def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, motor="Whisper", *, ip, progress):
@@ -164,6 +241,10 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, mo
         result, etiquetas, vram_nemotron = _con_nemotron(audio, identificar, num_hablantes, progress)
         vram_pico = gpu.pico_gb()  # la alineación con Whisper
         extra = f"\tvram_nemotron={vram_nemotron:.1f}GB"
+    elif motor == DEEPINFRA:
+        audio = whisper.load_audio(input_file)
+        result, etiquetas, extra = _con_deepinfra(input_file, audio, identificar, num_hablantes, progress)
+        vram_pico = gpu.pico_gb()
     else:
         parte_whisper = 0.8 if identificar else 1.0
         with gpu.trabajo("whisper"):
@@ -175,11 +256,11 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, mo
             )
             del model  # que gpu.trabajo pueda liberarlo antes de pyannote
         vram_pico = gpu.pico_gb()
-    duracion_total = result.duration or 0
+    duracion_total = len(audio) / nemotron.SR if audio is not None else (result.duration or 0)
     idioma_detectado = result.language or "autodetectado"
     nombre_base = os.path.splitext(os.path.basename(input_file))[0]
-    # El motor va en el nombre (video_en.nemotron.srt) para poder comparar las dos versiones
-    path_srt = os.path.join(OUTPUT_DIR, f"{nombre_base}_{idioma_detectado}.{motor.lower()}.srt")
+    # El motor va en el nombre (video_en.nemotron.srt) para poder comparar las versiones
+    path_srt = os.path.join(OUTPUT_DIR, f"{nombre_base}_{idioma_detectado}.{MOTORES[motor]}.srt")
 
     # 2. Guardamos las palabras con sus tiempos para poder rearmar los loops sin volver a transcribir
     path_palabras = palabras_json(path_srt)
@@ -210,7 +291,7 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, mo
     # Log
     duracion_habla = lista_loops[-1][-1].end if lista_loops else 0
     duracion_proceso = time.time() - t0
-    logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\tmotor={motor.lower()}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(lista_loops)}{cantidad}\tvram_pico={vram_pico:.1f}GB{extra}\tip={ip}")
+    logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\tmotor={MOTORES[motor]}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(lista_loops)}{cantidad}\tvram_pico={vram_pico:.1f}GB{extra}\tip={ip}")
 
     return salidas(path_srt)
 
@@ -429,7 +510,7 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
         gpu.descargar_ollama(modelo or OLLAMA_MODELS[0])
 
     # video_en.nemotron.nombres → video_es.nemotron.nombres (el motor y los nombres se conservan)
-    nombre_base, extras = re.fullmatch(r"(.*?)((?:\.(?:whisper|nemotron|nombres))*)",
+    nombre_base, extras = re.fullmatch(r"(.*?)((?:\.(?:whisper|nemotron|deepinfra|nombres))*)",
                                        os.path.splitext(nombre_srt)[0]).groups()
     sufijo = target_code.split("-")[0]  # es-419 → video_es.srt
     sufijo_origen = source_code.split("-")[0]
@@ -460,6 +541,8 @@ def procesar_en_cola(input_file, motor, identificar, num_hablantes, max_palabras
         return None
     if motor == "Nemotron" and not nemotron.disponible():
         raise gr.Error("Nemotron no está instalado en este servidor (falta llama-server o el modelo): corré setup.sh.")
+    if motor == DEEPINFRA and not nemotron.deepinfra_disponible():
+        raise gr.Error("Falta la clave de DeepInfra (DEEPINFRA_API_KEY en ~/.config/whisptest.env).")
     ajustes = _ajustes(max_palabras, max_segundos, min_palabras, pausa_suave)
     cantidad = int(num_hablantes) if str(num_hablantes).isdigit() else None
     t = cola.encolar("Transcribir", os.path.basename(input_file), procesar,
@@ -480,14 +563,14 @@ def transcripciones():
     carpeta = os.path.join(OUTPUT_DIR, "palabras")
     if not os.path.isdir(carpeta):
         return []
-    jsons = [f for f in os.listdir(carpeta) if f.endswith(".json")]
+    jsons = [f for f in os.listdir(carpeta) if f.endswith(".json") and not f.endswith(".hablantes.json")]
     jsons.sort(key=lambda f: os.path.getmtime(os.path.join(carpeta, f)), reverse=True)
     return [f[:-len(".json")] + ".srt" for f in jsons]
 
 def _traducciones(nombre_srt):
     """Traducciones de esta transcripción (mismo video y mismo motor), hechas con los loops anteriores."""
     idioma = r"_[A-Za-z]{2,3}(?:-[A-Za-z]{2})?"
-    m = re.fullmatch(r"(.*)" + idioma + r"((?:\.(?:whisper|nemotron))?)\.srt", nombre_srt)
+    m = re.fullmatch(r"(.*)" + idioma + r"((?:\.(?:whisper|nemotron|deepinfra))?)\.srt", nombre_srt)
     if not m:
         return []
     patron = re.escape(m.group(1)) + idioma + re.escape(m.group(2)) + r"(?:\.nombres)?\.srt"
@@ -495,13 +578,16 @@ def _traducciones(nombre_srt):
     return sorted(f for f in os.listdir(OUTPUT_DIR) if f not in propios and re.fullmatch(patron, f))
 
 def mostrar_srt(nombre_srt, aviso=""):
-    """(archivos, resumen, texto) del SRT elegido; la vista previa es la de nombres si existe."""
+    """(archivos, resumen, texto) del SRT elegido; la vista previa es la de nombres si existe.
+
+    Sin SRT, la vista previa y los archivos se ocultan (para no dejar recuadros vacíos).
+    """
     archivos = salidas(nombre_srt) if nombre_srt else []
     if not archivos:
-        return None, "", ""
+        return gr.update(value=None, visible=False), "", gr.update(value="", visible=False)
     with open(archivos[-1], encoding="utf-8") as f:
         texto = f.read()
-    return archivos, aviso + loops.resumen_srt(texto), texto
+    return gr.update(value=archivos, visible=True), aviso + loops.resumen_srt(texto), gr.update(value=texto, visible=True)
 
 def rearmar(nombre_srt, max_palabras, max_segundos, min_palabras, pausa_suave, request: gr.Request):
     if not nombre_srt:
@@ -535,24 +621,27 @@ def traducir_en_cola(archivo_srt, idioma_origen, idioma_destino, instrucciones, 
 
 def build_tabs(demo):
     with gr.Tab("Transcribir") as tab_transcribir:
-        input_data = gr.File(
-            label="Subí tu Video o Audio (.mp3, .wav, .m4a, .aac, .flac, .ogg, .mp4, .mkv, etc.)",
-            file_types=[
-                "video", "audio",
-                ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".wma",
-                ".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv"
-            ],
-            type="filepath",
-        )
-
-        with gr.Row():
-            motor = gr.Radio(["Whisper", "Nemotron"], value="Whisper", label="Motor",
-                             info="Whisper: rápido. Nemotron: más lento (~2 min cada 10 de audio, hasta 1 hora), "
-                                  "detecta los hablantes él mismo.")
-            identificar = gr.Checkbox(True, label="Identificar hablantes",
-                                      info="Pone \"Nombre: texto\" en el SRT (con Whisper usa pyannote, suma unos 15 s).")
-            num_hablantes = gr.Dropdown(["Automático"] + [str(n) for n in range(1, 11)], value="Automático",
-                                        label="Cantidad de hablantes", info="Si la sabés, mejora la precisión")
+        with gr.Row(equal_height=True):
+            input_data = gr.File(
+                label="Subí tu Video o Audio (.mp3, .wav, .m4a, .aac, .flac, .ogg, .mp4, .mkv, etc.)",
+                file_types=[
+                    "video", "audio",
+                    ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".wma",
+                    ".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv"
+                ],
+                type="filepath",
+                height=250,
+            )
+            with gr.Column():
+                motor = gr.Radio(list(MOTORES), value="Whisper", label="Motor",
+                                 info="Whisper: rápido · Nemotron: mejores hablantes, ~2 min cada 10 de audio · "
+                                      "DeepInfra: Nemotron en la nube, ~USD 0,04 cada 20 min. "
+                                      "Los Nemotron numeran los hablantes de nuevo cada 10 min.")
+                with gr.Row():
+                    identificar = gr.Checkbox(True, label="Identificar hablantes",
+                                              info="\"Nombre: texto\" en el .nombres.srt")
+                    num_hablantes = gr.Dropdown(["Automático"] + [str(n) for n in range(1, 11)], value="Automático",
+                                                label="Cantidad de hablantes", info="Si la sabés, mejora la precisión")
 
         d = AJUSTES_DEF
         with gr.Accordion("Ajustes de loops", open=False):
@@ -616,20 +705,25 @@ def build_tabs(demo):
 
             btn_aplicar.click(aplicar_nombres, [todos, *campos, *ajustes], [output_srt, resumen, vista])
 
-        vista = gr.Textbox(label="Vista previa", lines=10, max_lines=10, interactive=False, buttons=["copy"])
-        output_srt = gr.File(label="Archivos SRT (limpio y, si hay hablantes, .nombres.srt)",
-                             file_count="multiple", interactive=False)
+        # Vista previa y archivos aparecen cuando hay una transcripción elegida o una en curso
+        with gr.Row(equal_height=True):
+            vista = gr.Textbox(label="Vista previa", lines=10, max_lines=10, interactive=False, buttons=["copy"],
+                               visible=False, scale=2)
+            output_srt = gr.File(label="Archivos SRT (limpio y, si hay hablantes, .nombres.srt)",
+                                 file_count="multiple", interactive=False, visible=False, scale=1)
 
         def al_terminar(paths, n):
             nombre = os.path.basename(paths[0]) if paths else None
-            return gr.update(choices=transcripciones(), value=nombre), *mostrar_srt(nombre)[1:], n + 1
+            return gr.update(choices=transcripciones(), value=nombre), *mostrar_srt(nombre), n + 1
 
         btn_transcribir.click(
+            lambda: gr.update(visible=True), None, output_srt, show_progress="hidden",  # ahí se ve el avance
+        ).then(
             fn=procesar_en_cola,
             inputs=[input_data, motor, identificar, num_hablantes, *ajustes],
             outputs=[output_srt],
             concurrency_limit=None,  # la GPU la serializa cola.py
-        ).success(al_terminar, [output_srt, refresco], [elegido, resumen, vista, refresco])
+        ).success(al_terminar, [output_srt, refresco], [elegido, output_srt, resumen, vista, refresco])
         btn_rearmar.click(rearmar, [elegido, *ajustes], [output_srt, resumen, vista])
         elegido.input(mostrar_srt, elegido, [output_srt, resumen, vista])
         tab_transcribir.select(lambda: gr.update(choices=transcripciones()), None, elegido, show_progress="hidden")
@@ -639,42 +733,42 @@ def build_tabs(demo):
               show_progress="hidden")
 
     with gr.Tab("Traducir SRT"):
-        with gr.Row():
-            input_srt = gr.File(label="Subí tu archivo SRT", file_types=[".srt"])
-
-        with gr.Row():
-            idioma_origen = gr.Dropdown(
-                choices=list(IDIOMAS.keys()),
-                value="English",
-                label="Idioma origen",
-            )
-            idioma_destino = gr.Dropdown(
-                choices=list(IDIOMAS.keys()),
-                value="Spanish",
-                label="Idioma destino",
-            )
-
-        modelo_ollama = gr.Dropdown(
-            choices=OLLAMA_MODELS,
-            value=OLLAMA_MODELS[0],
-            label="Modelo",
-        )
-
-        instrucciones = gr.Textbox(
-            label="Instrucciones extra (opcional)",
-            placeholder='Ej: Translate "muffins" as "magdalenas". Use informal tone (tuteo).',
-            lines=3,
-        )
+        with gr.Row(equal_height=True):
+            input_srt = gr.File(label="Subí tu archivo SRT", file_types=[".srt"], height=250)
+            with gr.Column():
+                with gr.Row():
+                    idioma_origen = gr.Dropdown(
+                        choices=list(IDIOMAS.keys()),
+                        value="English",
+                        label="Idioma origen",
+                    )
+                    idioma_destino = gr.Dropdown(
+                        choices=list(IDIOMAS.keys()),
+                        value="Spanish",
+                        label="Idioma destino",
+                    )
+                modelo_ollama = gr.Dropdown(
+                    choices=OLLAMA_MODELS,
+                    value=OLLAMA_MODELS[0],
+                    label="Modelo",
+                )
+                instrucciones = gr.Textbox(
+                    label="Instrucciones extra (opcional)",
+                    placeholder='Ej: Translate "muffins" as "magdalenas". Use informal tone (tuteo).',
+                    lines=3,
+                )
 
         btn_traducir = gr.Button("Traducir SRT", variant="primary")
 
-        with gr.Row():
-            output_traducido = gr.File(label="SRT Traducido")
+        with gr.Row(visible=False) as fila_traducido:  # aparece al traducir
+            output_traducido = gr.File(label="SRT Traducido", height=120)
             output_estado = gr.Textbox(label="Estado", interactive=False)
 
-        btn_traducir.click(
+        btn_traducir.click(lambda: gr.update(visible=True), None, fila_traducido, show_progress="hidden").then(
             fn=traducir_en_cola,
             inputs=[input_srt, idioma_origen, idioma_destino, instrucciones, modelo_ollama],
             outputs=[output_traducido, output_estado],
             concurrency_limit=None,  # la GPU la serializa cola.py
         )
+
+    return [(btn_transcribir, "Generar SRT de Loops"), (btn_traducir, "Traducir SRT")]

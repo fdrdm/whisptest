@@ -26,3 +26,6 @@ nohup.out
 # *.srt
 output_translate/
 output_separation/
+
+# Notas con claves
+Nemotron_DeepInfra_*.md

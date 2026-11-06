@@ -44,7 +44,30 @@ HEAD_HTML = """
     overflow-x: auto !important;
 }
 
-/* 2. Toast de progreso de subida por partes para Cloudflare Tunnel */
+/* 2. Encabezado: título y tarjeta de estado (cola + GPU) */
+#encabezado { align-items: center; }
+#encabezado h1 { margin: 0; font-size: 1.4rem; }
+.estado {
+    background: #141414;
+    border: 1px solid #262626;
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.estado-cola { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.estado-cola .punto { width: 10px; height: 10px; border-radius: 50%; background: #525252; flex: none; }
+.estado-cola.ocupada { color: #5fbfa5; }
+.estado-cola.ocupada .punto { background: #04a487; animation: latido 1.4s ease-in-out infinite; }
+@keyframes latido {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(4, 164, 135, 0.6); }
+    50% { box-shadow: 0 0 0 6px rgba(4, 164, 135, 0); }
+}
+.estado-gpu { font-size: 12px; color: #a3a3a3; }
+.estado-gpu > div > div { width: 8px !important; height: 8px !important; }
+
+/* 3. Toast de progreso de subida por partes para Cloudflare Tunnel */
 #cf-chunk-upload-toast {
     position: fixed;
     bottom: 24px;

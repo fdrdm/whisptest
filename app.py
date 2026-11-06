@@ -17,7 +17,7 @@ from chunk_uploader import launch_server
 
 
 def estado():
-    return gpu.estado_html() + cola.resumen_html()
+    return f'<div class="estado">{cola.resumen_html()}<div class="estado-gpu">{gpu.estado_html()}</div></div>'
 
 
 # Verde de wider-media.com (--brand-primary #038169) sobre negro
@@ -31,7 +31,12 @@ def tema():
     t = gr.themes.Base(
         primary_hue=VERDE, secondary_hue=VERDE, neutral_hue=gr.themes.colors.neutral,
         font=["ui-sans-serif", "system-ui", "sans-serif"],
+        radius_size=gr.themes.sizes.radius_lg,
     ).set(
+        # Tarjetas tipo bento: bordes redondeados y la misma separación entre todo
+        block_radius="16px",
+        container_radius="16px",
+        layout_gap="14px",
         body_background_fill_dark="#0a0a0a",
         background_fill_primary_dark="#141414",
         background_fill_secondary_dark="#0f0f0f",
@@ -53,17 +58,21 @@ def tema():
 
 
 with gr.Blocks(title="IA fdrdm") as demo:
-    gr.Markdown("# Subtítulos, Traducción y Separación de Audio 🎬🌐🎧")
-    indicador_gpu = gr.HTML(value=estado)
+    with gr.Row(equal_height=True, elem_id="encabezado"):
+        gr.Markdown("# Subtítulos, Traducción y Separación de Audio 🎬🌐🎧")
+        indicador = gr.HTML(value=estado)
 
-    server_translate.build_tabs(demo)
-    server_separation.build_tabs()
+    # (botón, texto normal): si hay trabajos en la cola pasan a decir "Agregar a la cola"
+    botones = server_translate.build_tabs(demo) + server_separation.build_tabs()
     cola.build_tab()
     archivos.build_archivos()
     archivos.build_historial()
 
-    timer = gr.Timer(5)
-    timer.tick(fn=estado, outputs=[indicador_gpu])
+    def refrescar():
+        return estado(), *[gr.update(value=cola.etiqueta_boton(texto)) for _, texto in botones]
+
+    timer = gr.Timer(3)
+    timer.tick(fn=refrescar, outputs=[indicador, *[b for b, _ in botones]], show_progress="hidden")
 
 if __name__ == "__main__":
     launch_server(demo, port=8188, allowed_paths=[server_translate.OUTPUT_DIR, server_separation.OUTPUT_DIR],

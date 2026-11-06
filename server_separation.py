@@ -285,7 +285,7 @@ def separar_en_cola(input_file, modelo_demucs_name, demucs_shifts, demucs_overla
 
 def build_tabs():
     with gr.Tab("Separar audio"):
-        with gr.Row():
+        with gr.Row(equal_height=True):
             with gr.Column(scale=1):
                 input_file = gr.File(
                     label="Subí tu Video o Audio (.mp3, .wav, .m4a, .aac, .flac, .ogg, .mp4, .mkv, etc.)",
@@ -295,6 +295,7 @@ def build_tabs():
                         ".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv"
                     ],
                     type="filepath",
+                    height=250,
                 )
 
             with gr.Column(scale=1):
@@ -319,21 +320,22 @@ def build_tabs():
 
         btn = gr.Button("Separar", variant="primary", size="lg")
 
-        gr.Markdown("### Con VAD (original donde no hay habla)")
-        with gr.Row():
-            out_voces_vad = gr.Audio(label="Habla VAD", type="filepath")
-            out_musica_vad = gr.Audio(label="SFX VAD", type="filepath")
+        with gr.Column(visible=False) as resultados:  # aparece al separar
+            out_estado = gr.Textbox(label="Estado", interactive=False)
+            gr.Markdown("### Con VAD (original donde no hay habla)")
+            with gr.Row():
+                out_voces_vad = gr.Audio(label="Habla VAD", type="filepath")
+                out_musica_vad = gr.Audio(label="SFX VAD", type="filepath")
 
-        gr.Markdown("### Sin VAD (Demucs puro)")
-        with gr.Row():
-            out_voces = gr.Audio(label="Habla", type="filepath")
-            out_musica = gr.Audio(label="SFX", type="filepath")
+            gr.Markdown("### Sin VAD (Demucs puro)")
+            with gr.Row():
+                out_voces = gr.Audio(label="Habla", type="filepath")
+                out_musica = gr.Audio(label="SFX", type="filepath")
 
-        out_estado = gr.Textbox(label="Estado", interactive=False)
-
-        btn.click(
+        btn.click(lambda: gr.update(visible=True), None, resultados, show_progress="hidden").then(
             fn=separar_en_cola,
             inputs=[input_file, modelo_demucs, demucs_shifts, demucs_overlap, vad_threshold],
             outputs=[out_voces_vad, out_musica_vad, out_voces, out_musica, out_estado],
             concurrency_limit=None,  # la GPU la serializa cola.py
         )
+    return [(btn, "Separar")]

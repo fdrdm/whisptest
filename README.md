@@ -56,7 +56,7 @@ Cada transcripción guarda sus palabras con tiempos en `output_translate/palabra
 
 Con **Identificar hablantes** (activado por defecto) el trabajo de transcripción corre pyannote (`pyannote/speaker-diarization-community-1`) después de Whisper: unos 15 s más y 0,6 GB de VRAM (lotes de 8). Cada palabra queda asignada a un hablante en `palabras/<video>_<idioma>.<motor>.hablantes.json`, con una muestra de audio de cada uno. Los loops nunca mezclan hablantes y el `.nombres.srt` lleva `Nombre: texto` (en todos los loops, o solo cuando cambia el hablante o tras una pausa de más de 2 s). En **Resultado → Hablantes** se escuchan las muestras y se ponen los nombres (sugiere los usados en otros videos). Al traducir, los nombres se separan antes de mandar el texto al modelo y se vuelven a poner después.
 
-Los archivos llevan el motor en el nombre, así se pueden comparar: `<video>_<idioma>.whisper.srt` / `.nemotron.srt` (limpio, sin hablantes) y, con hablantes, `<video>_<idioma>.<motor>.nombres.srt` con los mismos loops y `Nombre: texto` (los que no tienen nombre salen como "Hablante N"). Las traducciones conservan los sufijos: `<video>_es.nemotron.nombres.srt`. Los archivos de antes (sin motor en el nombre) siguen funcionando.
+Los archivos llevan el motor en el nombre, así se pueden comparar: `<video>_<idioma>.whisper.srt` / `.nemotron.srt` / `.deepinfra.srt` (limpio, sin hablantes) y, con hablantes, `<video>_<idioma>.<motor>.nombres.srt` con los mismos loops y `Nombre: texto` (los que no tienen nombre salen como "Hablante N"). Las traducciones conservan los sufijos: `<video>_es.nemotron.nombres.srt`. Los archivos de antes (sin motor en el nombre) siguen funcionando.
 
 ### Editor de hablantes (`editor.py`, `/editor`)
 
@@ -68,12 +68,23 @@ Requiere aceptar los términos del modelo en Hugging Face y un token en `~/.cach
 
 ## 🎙️ Nemotron (`nemotron.py`)
 
-En **Transcribir → Motor** se puede elegir NVIDIA Nemotron 3.5 Transcribe en vez de Whisper. Tarda más (unos 2 min cada 10 de audio; hasta 1 hora por archivo), pero detecta solo los hablantes (no usa pyannote) y suele separar mejor quién dice cada frase. Nemotron no da tiempos: su texto se alinea con Whisper (`model.align`, ~30 s cada 10 min, ~10 ms de diferencia con los tiempos de Whisper) y desde ahí todo es igual: JSON de palabras, hablantes, loops y **Rearmar**.
+En **Transcribir → Motor** se puede elegir NVIDIA Nemotron 3.5 Transcribe en vez de Whisper. Tarda más (unos 2 min cada 10 de audio), pero detecta solo los hablantes (no usa pyannote) y suele separar mejor quién dice cada frase. Nemotron no da tiempos: su texto se alinea con Whisper (`model.align`, ~30 s cada 10 min, ~10 ms de diferencia con los tiempos de Whisper) y desde ahí todo es igual: JSON de palabras, hablantes, loops y **Rearmar**.
 
-- Corre local con `llama-server` de llama.cpp, que se levanta por trabajo en el puerto 8091 y se baja al terminar (carga en ~5 s). Los expertos del MoE van a RAM (~10–12 GB) y el resto a VRAM (~3,6 GB). El servidor corre dentro de un scope de systemd con tope de 30 GB de RAM: si se pasa, se mata solo ese proceso y no se cuelga la PC. Su salida va a `nemotron.log`.
+Como DeepInfra, el audio va en tramos de ~10 min, cortados en el medio segundo más silencioso del minuto 9 al 10 de cada tramo (así no se parte ninguna palabra). Es más estable que mandar todo junto y no tiene límite de duración. Los hablantes de cada tramo son distintos: al mismo personaje se le pone el mismo nombre en cada uno y en el `.nombres.srt` queda igual.
+
+- Corre local con `llama-server` de llama.cpp, que se levanta por trabajo en el puerto 8091 y se baja al terminar (carga en ~5 s). Los expertos del MoE van a RAM (~10–12 GB) y el resto a VRAM (~3,3 GB). El servidor corre dentro de un scope de systemd con tope de 30 GB de RAM: si se pasa, se mata solo ese proceso y no se cuelga la PC. Su salida va a `nemotron.log`.
 - No hay paquete de pip que sirva todavía (`llama-cpp-python` no trae el audio de Nemotron), así que `setup.sh` compila llama.cpp (commit fijado) en `~/llama.cpp` y baja el modelo IQ4_NL + `mmproj` F16 (~20 GB) de `maternion/Nemotron-3.5-Transcribe-30B-A4B-IQ-GGUF` a `~/modelos/nemotron-transcribe`. Otras rutas: `NEMOTRON_LLAMA_SERVER` y `NEMOTRON_DIR`.
 - Usa los prompts oficiales del model card, con el texto antes del audio (con otro prompt el modelo resume o se queda en bucle en audios largos).
 - Si se queda repitiendo (por ejemplo, el "la la la…" de una canción en Daria 101), lo detecta mientras genera, corta y reintenta con la penalización de repeticiones DRY de llama.cpp. DRY no se usa siempre porque también toca repeticiones legítimas ("self-esteem" → "self esteem"). Queda en `uso.log` como `NEMOTRON se quedó repitiendo`.
+
+### Nemotron en DeepInfra
+
+**Motor → Nemotron (DeepInfra)** manda el audio (opus mono de 16 kHz, ~4 MB cada 20 min) al modelo completo (BF16) en [DeepInfra](https://deepinfra.com/nvidia/NVIDIA-Nemotron-3.5-Transcribe-30B-A4B), que ya devuelve cada palabra con sus tiempos y su hablante. Tarda unos 2 min cada 20 de audio y cuesta unos USD 0,04 (queda en `uso.log` como `costo_usd` y en el Historial). No corre nada local: el idioma lo detecta el Whisper de DeepInfra (`whisper-large-v3-turbo`) con 30 s desde la mitad de lo hablado (~USD 0,0001).
+
+- La clave va en `~/.config/whisptest.env` (`DEEPINFRA_API_KEY=...`), que el servicio lee con `EnvironmentFile`. Nunca en el repo.
+- Se pide siempre con `diarize=true` y la instrucción con `<spk:N>`: sin eso devuelve una sola voz o pierde palabras.
+- DeepInfra corta el audio en tramos de ~10 min y **numera los hablantes de nuevo en cada tramo** (Daria 101 dio 21 hablantes), igual que el Nemotron local.
+- Si los tiempos vienen rotos (amontonados o desordenados, pasó en 1 de 6 pruebas), el texto se alinea con Whisper local como con el Nemotron local (es lo único que usa la GPU) (`alineado=whisper` en `uso.log`).
 
 ## 🎛️ Manejo de VRAM (`gpu.py`)
 
