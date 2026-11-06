@@ -58,8 +58,8 @@ OLLAMA_MODELS = [
     "translategemma:latest",
 ]
 
-PROMPT_TEMPLATE = """You are a professional {source_lang} ({source_code}) to {target_lang} ({target_code}) subtitle translator for subtitle blocks. Keep it informal, natural, and suitable for YouTube across LATAM avoiding regionalisms.
-{instrucciones_extra}.
+PROMPT_TEMPLATE = """You are a professional {source_lang} ({source_code}) to {target_lang} ({target_code}) subtitle translator{proposito}.
+{reglas}{instrucciones_extra}.
 The text is split into numbered subtitle blocks. Translate each one keeping the same numbering format. Use context from surrounding blocks to choose the best translation for ambiguous words.
 Reply ONLY with the translated blocks in this exact format:
 [1] translated text
@@ -68,11 +68,27 @@ Reply ONLY with the translated blocks in this exact format:
 
 {text}"""
 
+# Español: doblaje neutro para toda Latinoamérica. Comparado en un banco de 40 frases contra el prompt
+# anterior (que metía "vale", "tío", "coger", "estáis", "qué padre"): sin palabras de España ni de un solo país.
+DESTINO_PROMPT = {"Spanish": "Latin American Spanish"}
+PROPOSITO = {"Spanish": ' for a neutral Latin American dub ("español neutro" as used in professional dubbing for all of Latin America)'}
+REGLAS = {"Spanish": """Rules:
+- Use "ustedes" for plural "you", never "vosotros" or its verb forms (-áis, -éis, imperatives like "venid").
+- Use "tú" for informal singular; never "usted" unless the speaker is clearly being formal.
+- Spanish drops subject pronouns: don't add "ustedes", "tú" or "él" unless needed for clarity.
+- Translate the meaning of expressions, not word by word (e.g. "No way!" as surprise → "¡No puede ser!").
+- Never use Spain-only words: vale, guay, tío/tía (for dude), coger, móvil, ordenador, flipar, mola, venga, chaval, zumo, patatas, joder, hostia.
+- Never use slang from a single country (Mexico: güey, chido, qué padre, órale, neta, ahorita; Argentina: che, boludo, pibe, dale; Chile, Colombia, etc.).
+- Prefer neutral options: okay/all right → vary between "bien", "bueno", "muy bien", "está bien" and "de acuerdo"; cool/awesome → "genial" or "increíble"; dude/bro/man → "amigo" or omit it; guys → "chicos" or omit it; phone → "teléfono" or "celular"; car → "auto"; computer → "computadora"; juice → "jugo"; potatoes → "papas"; swear words → mild neutral equivalents ("diablos", "rayos", "maldición").
+- Keep it informal and natural, like a YouTube video.
+"""}
+
 BATCH_SIZE = 10
+TEMPERATURA = 0.2  # baja: traducciones más estables entre corridas
 
 IDIOMAS = {
     "English": "en",
-    "Spanish": "es-MX",
+    "Spanish": "es-419",
     "French": "fr",
     "German": "de",
     "Italian": "it",
@@ -184,8 +200,10 @@ def traducir_lote(textos_numerados, source_lang, source_code, target_lang, targe
     prompt = PROMPT_TEMPLATE.format(
         source_lang=source_lang,
         source_code=source_code,
-        target_lang=target_lang,
+        target_lang=DESTINO_PROMPT.get(target_lang, target_lang),
         target_code=target_code,
+        proposito=PROPOSITO.get(target_lang, " for subtitle blocks. Keep it informal and natural, like a YouTube video"),
+        reglas=REGLAS.get(target_lang, ""),
         instrucciones_extra=extra,
         text=bloque_texto,
     )
@@ -195,7 +213,7 @@ def traducir_lote(textos_numerados, source_lang, source_code, target_lang, targe
         "stream": False,
         "keep_alive": "15m",
         # Los lotes son chicos; sin esto hereda OLLAMA_CONTEXT_LENGTH=65536 y ocupa más VRAM
-        "options": {"num_ctx": 4096},
+        "options": {"num_ctx": 4096, "temperature": TEMPERATURA},
     }, timeout=300)
     resp.raise_for_status()
     respuesta = resp.json()["response"].strip()
@@ -273,10 +291,12 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
         gpu.descargar_ollama(modelo or OLLAMA_MODELS[0])
 
     nombre_base = os.path.splitext(nombre_srt)[0]
-    if nombre_base.endswith(f"_{source_code}"):
-        nombre_salida = f"{nombre_base[:-len(source_code)-1]}_{target_code}.srt"
+    sufijo = target_code.split("-")[0]  # es-419 → video_es.srt
+    sufijo_origen = source_code.split("-")[0]
+    if nombre_base.endswith(f"_{sufijo_origen}"):
+        nombre_salida = f"{nombre_base[:-len(sufijo_origen)-1]}_{sufijo}.srt"
     else:
-        nombre_salida = f"{nombre_base}_{target_code}.srt"
+        nombre_salida = f"{nombre_base}_{sufijo}.srt"
     path_salida = os.path.join(OUTPUT_DIR, nombre_salida)
 
     with open(path_salida, "w", encoding="utf-8") as f:
