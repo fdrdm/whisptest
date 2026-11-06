@@ -56,6 +56,12 @@ Cada transcripción guarda sus palabras con tiempos en `output_translate/palabra
 
 Con **Identificar hablantes** (activado por defecto) el trabajo de transcripción corre pyannote (`pyannote/speaker-diarization-community-1`) después de Whisper: unos 15 s más y 0,6 GB de VRAM (lotes de 8). Cada palabra queda asignada a un hablante en `palabras/<video>_<idioma>.hablantes.json`, con una muestra de audio de cada uno. Los loops nunca mezclan hablantes y el SRT lleva `Nombre: texto` (en todos los loops, o solo cuando cambia el hablante o tras una pausa de más de 2 s). En **Resultado → Hablantes** se escuchan las muestras y se ponen los nombres (sugiere los usados en otros videos). Al traducir, los nombres se separan antes de mandar el texto al modelo y se vuelven a poner después.
 
+Con hablantes se escriben dos SRT con los mismos loops: `<video>_<idioma>.srt` limpio (sin hablantes) y `<video>_<idioma>.nombres.srt` con `Nombre: texto` (los que no tienen nombre salen como "Hablante N"). Al traducir el de nombres, la traducción sale como `<video>_es.nombres.srt`.
+
+### Editor de hablantes (`editor.py`, `/editor`)
+
+Página aparte (se abre desde *Resultado → Hablantes*) para corregir quién dice cada loop: el video original se abre desde la compu de quien edita (no se sube, se reproduce desde el disco), el loop que suena se resalta y al hacer clic en uno el video salta ahí. Cada loop tiene su hablante (o uno nuevo), con atajos `1`–`9`, `↑`/`↓` y `Espacio`. Al guardar se corrigen las palabras en el `.hablantes.json` (así *Rearmar* respeta las correcciones) y se reescriben los dos SRT.
+
 Requiere aceptar los términos del modelo en Hugging Face y un token en `~/.cache/huggingface/token` solo para la primera descarga.
 
 ## 🎙️ Nemotron (`nemotron.py`)
@@ -65,6 +71,7 @@ En **Transcribir → Motor** se puede elegir NVIDIA Nemotron 3.5 Transcribe en v
 - Corre local con `llama-server` de llama.cpp, que se levanta por trabajo en el puerto 8091 y se baja al terminar (carga en ~5 s). Los expertos del MoE van a RAM (~10–12 GB) y el resto a VRAM (~3,6 GB). El servidor corre dentro de un scope de systemd con tope de 30 GB de RAM: si se pasa, se mata solo ese proceso y no se cuelga la PC. Su salida va a `nemotron.log`.
 - No hay paquete de pip que sirva todavía (`llama-cpp-python` no trae el audio de Nemotron), así que `setup.sh` compila llama.cpp (commit fijado) en `~/llama.cpp` y baja el modelo IQ4_NL + `mmproj` F16 (~20 GB) de `maternion/Nemotron-3.5-Transcribe-30B-A4B-IQ-GGUF` a `~/modelos/nemotron-transcribe`. Otras rutas: `NEMOTRON_LLAMA_SERVER` y `NEMOTRON_DIR`.
 - Usa los prompts oficiales del model card, con el texto antes del audio (con otro prompt el modelo resume o se queda en bucle en audios largos).
+- Si se queda repitiendo (por ejemplo, el "la la la…" de una canción en Daria 101), lo detecta mientras genera, corta y reintenta con la penalización de repeticiones DRY de llama.cpp. DRY no se usa siempre porque también toca repeticiones legítimas ("self-esteem" → "self esteem"). Queda en `uso.log` como `NEMOTRON se quedó repitiendo`.
 
 ## 🎛️ Manejo de VRAM (`gpu.py`)
 

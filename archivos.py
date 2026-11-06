@@ -48,8 +48,10 @@ def _clasificar(nombre):
     """(video, etiqueta) para un archivo de salida, o None si no es nuestro."""
     raiz, ext = os.path.splitext(nombre)
     if ext == ".srt":
+        con_nombres = " con nombres" if raiz.endswith(".nombres") else ""
+        raiz = raiz.removesuffix(".nombres")
         m = re.match(r"^(.*)_([A-Za-z]{2,3}(?:-[A-Za-z]{2})?)$", raiz)
-        return (m.group(1), f"SRT {m.group(2)}") if m else (raiz, "SRT")
+        return (m.group(1), f"SRT {m.group(2)}{con_nombres}") if m else (raiz, f"SRT{con_nombres}")
     if ext == ".mp3":
         for sufijo, etiqueta in AUDIOS.items():
             if raiz.endswith(sufijo):

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de hablantes</title>
+<link rel="icon" href="favicon.ico">
+<style>
+:root {
+  --fondo: #0a0a0a; --panel: #141414; --panel-2: #1b1b1b; --borde: #262626;
+  --texto: #f4faf8; --suave: #9ab6ac; --verde: #038169; --verde-claro: #04a487; --error: #d9554c;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--texto);
+  font: 14px/1.45 ui-sans-serif, system-ui, sans-serif; }
+button, select, input { font: inherit; color: inherit; }
+button { background: var(--panel-2); border: 1px solid var(--borde); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--verde); }
+button.primario { background: var(--verde); border-color: var(--verde); color: #fff; font-weight: 600; }
+button.primario:hover { background: var(--verde-claro); }
+button:disabled { opacity: .5; cursor: default; }
+select, input[type=text] { background: var(--panel-2); border: 1px solid var(--borde); border-radius: 8px; padding: 6px 8px; }
+a { color: var(--verde-claro); }
+
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px;
+  border-bottom: 1px solid var(--borde); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+header h1 { font-size: 16px; margin: 0 8px 0 0; }
+header .espacio { flex: 1; }
+#estado { color: var(--suave); font-size: 13px; }
+#estado.error { color: var(--error); }
+label.archivo { background: var(--panel-2); border: 1px solid var(--borde); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+label.archivo:hover { border-color: var(--verde); }
+label.archivo input { display: none; }
+
+main { display: grid; grid-template-columns: minmax(320px, 46%) 1fr; gap: 16px; padding: 16px; height: calc(100% - 58px); }
+.columna { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.caja { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 12px; }
+video { width: 100%; max-height: 52vh; background: #000; border-radius: 8px; display: block; }
+#sin-video { color: var(--suave); text-align: center; padding: 48px 12px; border: 1px dashed var(--borde); border-radius: 8px; }
+#subtitulo { min-height: 44px; margin-top: 8px; text-align: center; font-size: 15px; }
+.atajos { color: var(--suave); font-size: 12px; }
+.atajos kbd { background: var(--panel-2); border: 1px solid var(--borde); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+
+#hablantes { overflow: auto; }
+.hablante { display: grid; grid-template-columns: 14px 26px 1fr auto auto; align-items: center; gap: 8px; padding: 5px 0; }
+.punto { width: 12px; height: 12px; border-radius: 50%; }
+.tecla { color: var(--suave); font-size: 12px; text-align: center; }
+.hablante input { width: 100%; }
+.hablante .info { color: var(--suave); font-size: 12px; white-space: nowrap; }
+
+#loops { flex: 1; overflow: auto; padding: 0; }
+.loop { display: grid; grid-template-columns: 62px 150px 1fr; gap: 10px; align-items: start;
+  padding: 7px 12px; border-bottom: 1px solid var(--borde); border-left: 3px solid transparent; cursor: pointer; }
+.loop:hover { background: var(--panel-2); }
+.loop.sonando { background: #0f2a23; }
+.loop.elegido { border-left-color: var(--verde-claro); }
+.loop.cambiado .tiempo::after { content: " •"; color: var(--verde-claro); }
+.tiempo { color: var(--suave); font-variant-numeric: tabular-nums; padding-top: 6px; }
+.loop select { width: 100%; }
+.texto { padding-top: 5px; }
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; height: auto; }
+  #loops { max-height: 70vh; }
+  .loop { grid-template-columns: 52px 120px 1fr; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Editor de hablantes</h1>
+  <select id="transcripcion" aria-label="Transcripción"></select>
+  <label class="archivo">Abrir video de mi compu<input type="file" id="video-local" accept="video/*,audio/*"></label>
+  <span class="espacio"></span>
+  <span id="estado"></span>
+  <a id="descargar" href="#" hidden>Descargar .nombres.srt</a>
+  <button class="primario" id="guardar" disabled>Guardar</button>
+</header>
+<main>
+  <div class="columna">
+    <div class="caja">
+      <div id="sin-video">Abrí el video original desde tu compu para ver y escuchar cada loop.<br>
+        No se sube: se reproduce directo desde tu disco.</div>
+      <video id="video" controls hidden></video>
+      <div id="subtitulo"></div>
+      <div class="atajos">Hacé clic en un loop para ir a ese momento. Con un loop elegido:
+        <kbd>1</kbd>–<kbd>9</kbd> cambia el hablante · <kbd>↑</kbd><kbd>↓</kbd> mueve · <kbd>Espacio</kbd> reproduce/pausa ·
+        <label><input type="checkbox" id="seguir" checked> seguir el video</label></div>
+    </div>
+    <div class="caja" id="hablantes"></div>
+  </div>
+  <div class="caja columna" id="loops"></div>
+</main>
+<script>
+const COLORES = ["#04a487", "#e0a43a", "#6aa2f0", "#e06a8a", "#a27ef0", "#5fc4d9", "#d9d14f", "#f08a5d", "#8bd17c", "#c98bd1"];
+const $ = (id) => document.getElementById(id);
+let srt = null, loops = [], hablantes = {}, todos = true, elegido = -1, sonando = -1, cambios = false, urlVideo = null;
+
+const color = (h) => COLORES[(parseInt(h.slice(1)) - 1) % COLORES.length];
+const etiqueta = (h) => hablantes[h]?.nombre || `Hablante ${h.slice(1)}`;
+const orden = () => Object.keys(hablantes).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
+const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+function estado(texto, error = false) { $("estado").textContent = texto; $("estado").className = error ? "error" : ""; }
+function marcar() { cambios = true; $("guardar").disabled = false; estado("Cambios sin guardar"); }
+
+async function api(url, opciones) {
+  const r = await fetch(url, opciones);
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || `Error ${r.status}`);
+  return r.json();
+}
+
+async function cargarLista() {
+  const lista = await api("api/editor/transcripciones");
+  const pedido = new URLSearchParams(location.search).get("srt");
+  $("transcripcion").innerHTML = lista.length ? lista.map((n) => `<option>${n.replace(/</g, "&lt;")}</option>`).join("")
+    : "<option value=''>No hay transcripciones con hablantes</option>";
+  if (pedido && lista.includes(pedido)) $("transcripcion").value = pedido;
+  if (lista.length) await cargar($("transcripcion").value);
+}
+
+async function cargar(nombre) {
+  estado("Cargando...");
+  try {
+    const d = await api(`api/editor/datos?srt=${encodeURIComponent(nombre)}`);
+    srt = nombre; loops = d.loops; hablantes = d.hablantes; todos = d.todos;
+    elegido = -1; sonando = -1; cambios = false; $("guardar").disabled = true;
+    $("descargar").href = `api/editor/srt?srt=${encodeURIComponent(nombre)}`; $("descargar").hidden = false;
+    history.replaceState(null, "", `?srt=${encodeURIComponent(nombre)}`);
+    dibujarHablantes(); dibujarLoops();
+    estado(`${loops.length} loops · ${orden().length} hablantes`);
+  } catch (e) { estado(e.message, true); }
+}
+
+function opciones(actual) {
+  return orden().map((h) => `<option value="${h}"${h === actual ? " selected" : ""}>${etiqueta(h)}</option>`).join("")
+    + `<option value="nuevo">+ Hablante nuevo</option>`;
+}
+
+function dibujarHablantes() {
+  const cuenta = {};
+  loops.forEach((l) => cuenta[l.hablante] = (cuenta[l.hablante] || 0) + 1);
+  $("hablantes").innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <strong>Hablantes</strong>
+      <label class="atajos"><input type="checkbox" id="todos" ${todos ? "checked" : ""}> nombre en todos los loops</label></div>`
+    + orden().map((h, i) => `<div class="hablante">
+      <span class="punto" style="background:${color(h)}"></span>
+      <span class="tecla">${i < 9 ? i + 1 : ""}</span>
+      <input type="text" data-h="${h}" value="${(hablantes[h].nombre || "").replace(/"/g, "&quot;")}" placeholder="Hablante ${h.slice(1)}">
+      ${hablantes[h].muestra ? `<button data-muestra="${h}" title="Escuchar muestra">▶</button>` : "<span></span>"}
+      <span class="info">${cuenta[h] || 0} loops</span></div>`).join("");
+  $("hablantes").querySelectorAll("input[type=text]").forEach((inp) => inp.addEventListener("input", () => {
+    hablantes[inp.dataset.h].nombre = inp.value; marcar();
+    document.querySelectorAll(`.loop select option[value="${inp.dataset.h}"]`).forEach((o) => o.textContent = etiqueta(inp.dataset.h));
+  }));
+  $("hablantes").querySelectorAll("[data-muestra]").forEach((b) => b.addEventListener("click", () =>
+    new Audio(`api/editor/muestra?srt=${encodeURIComponent(srt)}&h=${b.dataset.muestra}`).play()));
+  $("todos").addEventListener("change", (e) => { todos = e.target.checked; marcar(); });
+}
+
+function dibujarLoops() {
+  $("loops").innerHTML = loops.map((l, i) => `<div class="loop" data-i="${i}" style="--c:${color(l.hablante)}">
+      <span class="tiempo">${mmss(l.inicio)}</span>
+      <select data-i="${i}" style="border-color:${color(l.hablante)}">${opciones(l.hablante)}</select>
+      <span class="texto">${l.texto.replace(/</g, "&lt;")}</span></div>`).join("");
+  $("loops").querySelectorAll(".loop").forEach((fila) => fila.addEventListener("click", (e) => {
+    if (e.target.tagName === "SELECT") return;
+    elegir(+fila.dataset.i, true);
+  }));
+  $("loops").querySelectorAll("select").forEach((s) => s.addEventListener("change", () => asignar(+s.dataset.i, s.value)));
+}
+
+function asignar(i, h) {
+  if (h === "nuevo") {
+    h = "H" + (Math.max(0, ...orden().map((x) => parseInt(x.slice(1)))) + 1);
+    hablantes[h] = { nombre: "", segundos: 0, muestra: false };
+    loops[i].hablante = h; dibujarHablantes(); dibujarLoops(); elegir(i, false);
+  } else {
+    loops[i].hablante = h;
+    const s = document.querySelector(`.loop select[data-i="${i}"]`);
+    s.value = h; s.style.borderColor = color(h);
+    dibujarHablantes();
+  }
+  document.querySelector(`.loop[data-i="${i}"]`).classList.add("cambiado");
+  mostrarSubtitulo(); marcar();
+}
+
+function elegir(i, saltar) {
+  if (i < 0 || i >= loops.length) return;
+  document.querySelector(".loop.elegido")?.classList.remove("elegido");
+  elegido = i;
+  const fila = document.querySelector(`.loop[data-i="${i}"]`);
+  fila.classList.add("elegido"); fila.scrollIntoView({ block: "nearest" });
+  if (saltar && !$("video").hidden) { $("video").currentTime = loops[i].inicio; $("video").play(); }
+}
+
+function mostrarSubtitulo() {
+  const l = loops[sonando];
+  $("subtitulo").innerHTML = l ? `<span style="color:${color(l.hablante)};font-weight:600">${etiqueta(l.hablante)}:</span> ${l.texto.replace(/</g, "&lt;")}` : "";
+}
+
+$("video").addEventListener("timeupdate", () => {
+  const t = $("video").currentTime;
+  let i = loops.findIndex((l) => t >= l.inicio && t <= l.fin + 0.15);
+  if (i === sonando) return;
+  document.querySelector(".loop.sonando")?.classList.remove("sonando");
+  sonando = i;
+  if (i >= 0) {
+    const fila = document.querySelector(`.loop[data-i="${i}"]`);
+    fila.classList.add("sonando");
+    if ($("seguir").checked) fila.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+  mostrarSubtitulo();
+});
+
+$("video-local").addEventListener("change", (e) => {
+  const archivo = e.target.files[0];
+  if (!archivo) return;
+  if (urlVideo) URL.revokeObjectURL(urlVideo);
+  urlVideo = URL.createObjectURL(archivo);
+  $("video").src = urlVideo; $("video").hidden = false; $("sin-video").hidden = true;
+});
+
+$("transcripcion").addEventListener("change", async (e) => {
+  if (cambios && !confirmarDescarte()) { e.target.value = srt; return; }
+  await cargar(e.target.value);
+});
+function confirmarDescarte() { return window.confirm("Hay cambios sin guardar. ¿Descartarlos?"); }
+
+$("guardar").addEventListener("click", async () => {
+  $("guardar").disabled = true; estado("Guardando...");
+  try {
+    const nombres = Object.fromEntries(orden().map((h) => [h, hablantes[h].nombre || ""]));
+    const r = await api(`api/editor/guardar?srt=${encodeURIComponent(srt)}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ por_loop: loops.map((l) => l.hablante), nombres, todos }),
+    });
+    cambios = false;
+    document.querySelectorAll(".loop.cambiado").forEach((f) => f.classList.remove("cambiado"));
+    await cargar(srt);
+    estado(`Guardado en ${r.archivo}`);
+  } catch (e) { estado(e.message, true); $("guardar").disabled = false; }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if (e.key === " " && !$("video").hidden) { e.preventDefault(); $("video").paused ? $("video").play() : $("video").pause(); }
+  else if (e.key === "ArrowDown") { e.preventDefault(); elegir(elegido + 1, true); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); elegir(elegido - 1, true); }
+  else if (/^[1-9]$/.test(e.key) && elegido >= 0) {
+    const h = orden()[+e.key - 1];
+    if (h) asignar(elegido, h);
+  }
+});
+
+window.addEventListener("beforeunload", (e) => { if (cambios) { e.preventDefault(); e.returnValue = ""; } });
+cargarLista().catch((e) => estado(e.message, true));
+</script>
+</body>
+</html>

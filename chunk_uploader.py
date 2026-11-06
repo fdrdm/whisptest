@@ -285,10 +285,13 @@ def setup_chunked_upload(demo: gr.Blocks, app: FastAPI, output_dir: str = None):
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
-def launch_server(demo: gr.Blocks, port: int, allowed_paths: list = None, theme=None):
+def launch_server(demo: gr.Blocks, port: int, allowed_paths: list = None, theme=None, favicon_path=None,
+                  routers=()):
     """Monta Gradio sobre FastAPI con soporte para chunked uploads y ejecuta uvicorn."""
     app = FastAPI()
     setup_chunked_upload(demo, app)
+    for router in routers:  # páginas propias (antes de montar Gradio en "/")
+        app.include_router(router)
     mounted_app = gr.mount_gradio_app(
         app,
         demo,
@@ -296,5 +299,6 @@ def launch_server(demo: gr.Blocks, port: int, allowed_paths: list = None, theme=
         allowed_paths=allowed_paths,
         head=HEAD_HTML,
         theme=theme,
+        favicon_path=favicon_path,
     )
     uvicorn.run(mounted_app, host="0.0.0.0", port=port)

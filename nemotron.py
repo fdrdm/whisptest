@@ -146,6 +146,46 @@ def prompt(hablantes, cantidad=None):
     return PROMPT_HABLANTES.format(tags=" ".join(f"<spk:{i}>" for i in range(cantidad or 4)))
 
 
+# Penalización de repeticiones de llama.cpp. Solo para reintentar: corta bucles como el "la la la..."
+# de una canción (Daria 101), pero también toca repeticiones legítimas ("self-esteem" -> "self esteem")
+DRY = {"dry_multiplier": 0.8, "dry_base": 1.75, "dry_allowed_length": 2}
+
+
+class _Bucle(Exception):
+    pass
+
+
+def _en_bucle(texto, n=150):
+    """True si las últimas n palabras son casi todas la misma secuencia repetida."""
+    w = texto.lower().split()[-n:]
+    if len(w) < n:
+        return False
+    grupos = [tuple(w[i:i + 6]) for i in range(len(w) - 5)]
+    return len(set(grupos)) / len(grupos) < 0.2
+
+
+def _generar(body, url, esperados, progress, desc):
+    partes, fin = [], None
+    # Al cancelar, progress() lanza una excepción, se cierra la conexión y el servidor corta la generación
+    with requests.post(f"{url}/v1/chat/completions", json=body, stream=True, timeout=(10, 1800)) as r:
+        if not r.ok:
+            raise RuntimeError(f"Nemotron respondió {r.status_code}: {r.text[:300]}")
+        for linea in r.iter_lines():
+            if not linea.startswith(b"data: ") or linea == b"data: [DONE]":
+                continue
+            eleccion = json.loads(linea[6:])["choices"][0]
+            if eleccion["delta"].get("content"):
+                partes.append(eleccion["delta"]["content"])
+                if len(partes) % 20 == 0:
+                    progress(min(len(partes) / esperados, 0.99), desc=desc)
+                if len(partes) % 100 == 0 and _en_bucle("".join(partes)):
+                    raise _Bucle()
+            fin = eleccion.get("finish_reason") or fin
+    if fin == "length":  # se pasó del tope: casi seguro un bucle que el detector no vio
+        raise _Bucle()
+    return "".join(partes)
+
+
 def transcribir(audio, texto_prompt, progress, url=URL):
     """Texto de Nemotron para el audio (float32, 16 kHz). Va mostrando el avance y se puede cancelar."""
     segundos = len(audio) / SR
@@ -165,22 +205,13 @@ def transcribir(audio, texto_prompt, progress, url=URL):
     }
     esperados = max(segundos * 4, 50)
     progress(0, desc="Nemotron escuchando el audio...")
-    partes, fin, tokens = [], None, 0
-    # Al cancelar, progress() lanza una excepción, se cierra la conexión y el servidor corta la generación
-    with requests.post(f"{url}/v1/chat/completions", json=body, stream=True, timeout=(10, 1800)) as r:
-        if not r.ok:
-            raise RuntimeError(f"Nemotron respondió {r.status_code}: {r.text[:300]}")
-        for linea in r.iter_lines():
-            if not linea.startswith(b"data: ") or linea == b"data: [DONE]":
-                continue
-            eleccion = json.loads(linea[6:])["choices"][0]
-            if eleccion["delta"].get("content"):
-                partes.append(eleccion["delta"]["content"])
-                tokens += 1
-                if tokens % 20 == 0:
-                    progress(min(tokens / esperados, 0.99), desc="Nemotron transcribiendo...")
-            fin = eleccion.get("finish_reason") or fin
-    if fin == "length":
-        raise RuntimeError("Nemotron no terminó la transcripción (se quedó repitiendo o se pasó del largo). "
+    try:
+        return _generar(body, url, esperados, progress, "Nemotron transcribiendo...")
+    except _Bucle:
+        logging.info("NEMOTRON\tse quedó repitiendo: reintento con penalización de repeticiones (DRY)")
+    progress(0, desc="Nemotron se quedó repitiendo: reintentando con penalización de repeticiones...")
+    try:
+        return _generar({**body, **DRY}, url, esperados, progress, "Nemotron transcribiendo (2º intento)...")
+    except _Bucle:
+        raise RuntimeError("Nemotron se quedó repitiendo aun con penalización de repeticiones. "
                            "Probá con Whisper para este archivo.")
-    return "".join(partes)

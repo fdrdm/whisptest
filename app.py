@@ -3,10 +3,13 @@
 Todos los trabajos van a una sola cola (cola.py) que los procesa de a uno, y pasan por
 gpu.py, que limita la VRAM de la app (WHISPTEST_VRAM_GB, 5 GB por defecto).
 """
+import os
+
 import gradio as gr
 
 import archivos
 import cola
+import editor
 import gpu
 import server_separation
 import server_translate
@@ -64,4 +67,5 @@ with gr.Blocks(title="IA fdrdm") as demo:
 
 if __name__ == "__main__":
     launch_server(demo, port=8188, allowed_paths=[server_translate.OUTPUT_DIR, server_separation.OUTPUT_DIR],
-                  theme=tema())
+                  theme=tema(), favicon_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "favicon.png"),
+                  routers=[editor.router])

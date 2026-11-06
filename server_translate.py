@@ -9,6 +9,7 @@ import time
 import threading
 import torch
 import gc
+from urllib.parse import quote
 
 import cola
 import gpu
@@ -210,23 +211,34 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, mo
     duracion_proceso = time.time() - t0
     logging.info(f"TRANSCRIPCION\t{nombre_base}\t{idioma_detectado}\tmotor={motor.lower()}\taudio={duracion_total:.0f}s\thabla={duracion_habla:.0f}s\tproceso={duracion_proceso:.0f}s\tloops={len(lista_loops)}{cantidad}\tvram_pico={vram_pico:.1f}GB{extra}\tip={ip}")
 
-    return path_srt
+    return salidas(path_srt)
 
 def hablantes_json(path_srt):
     return palabras_json(path_srt)[:-len(".json")] + ".hablantes.json"
 
+def srt_nombres(path_srt):
+    """video_en.srt -> video_en.nombres.srt: los mismos loops con "Nombre: texto"."""
+    return os.path.join(OUTPUT_DIR, os.path.splitext(os.path.basename(path_srt))[0] + ".nombres.srt")
+
+def salidas(path_srt):
+    """El SRT limpio y, si hay hablantes, el de nombres."""
+    path_srt = os.path.join(OUTPUT_DIR, os.path.basename(path_srt))
+    return [p for p in (path_srt, srt_nombres(path_srt)) if os.path.exists(p)]
+
 def _armar_y_escribir(path_srt, palabras, ajustes):
-    """Arma los loops (sin mezclar hablantes si se identificaron) y escribe el SRT con los nombres."""
+    """Arma los loops (sin mezclar hablantes si se identificaron) y escribe el SRT limpio y el de nombres."""
     datos = hablantes.cargar(hablantes_json(path_srt))
     if datos and len(datos["palabras"]) == len(palabras):
         con_hablante = loops.armar_por_hablante(palabras, datos["palabras"], ajustes)
         nombres = {h: d["nombre"] for h, d in datos["hablantes"].items()}
         lista_loops = [loop for _, loop in con_hablante]
-        loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, os.path.basename(path_srt)),
+        loops.escribir_srt(lista_loops, srt_nombres(path_srt),
                            loops.nombres_por_loop(con_hablante, nombres, datos.get("todos", True)))
     else:
         lista_loops = loops.armar(palabras, ajustes)
-        loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, os.path.basename(path_srt)))
+        if os.path.exists(srt_nombres(path_srt)):  # de una transcripción anterior con hablantes
+            os.remove(srt_nombres(path_srt))
+    loops.escribir_srt(lista_loops, os.path.join(OUTPUT_DIR, os.path.basename(path_srt)))
     return lista_loops
 
 def parsear_srt(contenido_srt):
@@ -416,12 +428,14 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
         gpu.descargar_ollama(modelo or OLLAMA_MODELS[0])
 
     nombre_base = os.path.splitext(nombre_srt)[0]
+    con_nombres = ".nombres" if nombre_base.endswith(".nombres") else ""  # video_en.nombres → video_es.nombres
+    nombre_base = nombre_base.removesuffix(".nombres")
     sufijo = target_code.split("-")[0]  # es-419 → video_es.srt
     sufijo_origen = source_code.split("-")[0]
     if nombre_base.endswith(f"_{sufijo_origen}"):
-        nombre_salida = f"{nombre_base[:-len(sufijo_origen)-1]}_{sufijo}.srt"
+        nombre_salida = f"{nombre_base[:-len(sufijo_origen)-1]}_{sufijo}{con_nombres}.srt"
     else:
-        nombre_salida = f"{nombre_base}_{sufijo}.srt"
+        nombre_salida = f"{nombre_base}_{sufijo}{con_nombres}.srt"
     path_salida = os.path.join(OUTPUT_DIR, nombre_salida)
 
     with open(path_salida, "w", encoding="utf-8") as f:
@@ -471,21 +485,22 @@ def transcripciones():
 
 def _traducciones(nombre_srt):
     """Otros SRT del mismo video: traducciones hechas con los loops anteriores."""
-    idioma = r"_[A-Za-z]{2,3}(?:-[A-Za-z]{2})?\.srt"
+    idioma = r"_[A-Za-z]{2,3}(?:-[A-Za-z]{2})?(?:\.nombres)?\.srt"
     m = re.fullmatch(r"(.*)" + idioma, nombre_srt)
     if not m:
         return []
     patron = re.escape(m.group(1)) + idioma
-    return sorted(f for f in os.listdir(OUTPUT_DIR) if f != nombre_srt and re.fullmatch(patron, f))
+    propios = {nombre_srt, os.path.basename(srt_nombres(nombre_srt))}
+    return sorted(f for f in os.listdir(OUTPUT_DIR) if f not in propios and re.fullmatch(patron, f))
 
 def mostrar_srt(nombre_srt, aviso=""):
-    """(archivo, resumen, texto) del SRT elegido."""
-    path = os.path.join(OUTPUT_DIR, nombre_srt) if nombre_srt else None
-    if not path or not os.path.exists(path):
+    """(archivos, resumen, texto) del SRT elegido; la vista previa es la de nombres si existe."""
+    archivos = salidas(nombre_srt) if nombre_srt else []
+    if not archivos:
         return None, "", ""
-    with open(path, encoding="utf-8") as f:
+    with open(archivos[-1], encoding="utf-8") as f:
         texto = f.read()
-    return path, aviso + loops.resumen_srt(texto), texto
+    return archivos, aviso + loops.resumen_srt(texto), texto
 
 def rearmar(nombre_srt, max_palabras, max_segundos, min_palabras, pausa_suave, request: gr.Request):
     if not nombre_srt:
@@ -573,22 +588,25 @@ def build_tabs(demo):
             if not datos or not datos.get("hablantes"):
                 return
             sugeridos = hablantes.nombres_usados(os.path.join(OUTPUT_DIR, "palabras"))
-            gr.Markdown("### Hablantes\nEscuchá cada muestra, poné los nombres y aplicalos. "
-                        "Si pyannote partió a una persona en dos, poneles el mismo nombre.")
-            campos = []
-            for h, info in datos["hablantes"].items():
-                with gr.Row(equal_height=True):
-                    gr.Audio(info["muestra"], type="filepath", interactive=False, show_label=False, scale=2)
-                    frase = info["frase"] if len(info["frase"]) <= 140 else info["frase"][:140] + "…"
-                    m, seg = divmod(int(info["segundos"]), 60)
-                    with gr.Column(scale=3):
-                        gr.Markdown(f"**Hablante {h[1:]}** · habla {f'{m}m {seg:02d}s' if m else f'{seg}s'}\n\n_{frase}_")
-                    campos.append(gr.Dropdown(sugeridos, value=info["nombre"] or None, allow_custom_value=True,
-                                              label="Nombre", interactive=True, scale=2))
-            with gr.Row():
-                todos = gr.Checkbox(datos.get("todos", True), label="Nombre en todos los loops", interactive=True,
-                                    info="Destildado: solo cuando cambia el hablante o tras una pausa de más de 2 s")
-                btn_aplicar = gr.Button("Aplicar nombres", variant="primary")
+            with gr.Accordion(f"Hablantes ({len(datos['hablantes'])})", open=False):
+                gr.Markdown("Escuchá cada muestra, poné los nombres y aplicalos. "
+                            "Si a una persona la partió en dos, poneles el mismo nombre. "
+                            f"Para corregir quién dice cada loop mirando el video: "
+                            f"[abrir el editor de hablantes ↗](editor?srt={quote(nombre_srt)})")
+                campos = []
+                for h, info in datos["hablantes"].items():
+                    with gr.Row(equal_height=True):
+                        gr.Audio(info["muestra"], type="filepath", interactive=False, show_label=False, scale=2)
+                        frase = info["frase"] if len(info["frase"]) <= 140 else info["frase"][:140] + "…"
+                        m, seg = divmod(int(info["segundos"]), 60)
+                        with gr.Column(scale=3):
+                            gr.Markdown(f"**Hablante {h[1:]}** · habla {f'{m}m {seg:02d}s' if m else f'{seg}s'}\n\n_{frase}_")
+                        campos.append(gr.Dropdown(sugeridos, value=info["nombre"] or None, allow_custom_value=True,
+                                                  label="Nombre", interactive=True, scale=2))
+                with gr.Row():
+                    todos = gr.Checkbox(datos.get("todos", True), label="Nombre en todos los loops", interactive=True,
+                                        info="Destildado: solo cuando cambia el hablante o tras una pausa de más de 2 s")
+                    btn_aplicar = gr.Button("Aplicar nombres", variant="primary")
 
             def aplicar_nombres(todos_valor, *valores):
                 nombres = dict(zip(datos["hablantes"], valores[:len(campos)]))
@@ -598,10 +616,11 @@ def build_tabs(demo):
             btn_aplicar.click(aplicar_nombres, [todos, *campos, *ajustes], [output_srt, resumen, vista])
 
         vista = gr.Textbox(label="Vista previa", lines=10, max_lines=10, interactive=False, buttons=["copy"])
-        output_srt = gr.File(label="Archivo SRT", interactive=False)
+        output_srt = gr.File(label="Archivos SRT (limpio y, si hay hablantes, .nombres.srt)",
+                             file_count="multiple", interactive=False)
 
-        def al_terminar(path, n):
-            nombre = os.path.basename(path) if path else None
+        def al_terminar(paths, n):
+            nombre = os.path.basename(paths[0]) if paths else None
             return gr.update(choices=transcripciones(), value=nombre), *mostrar_srt(nombre)[1:], n + 1
 
         btn_transcribir.click(
