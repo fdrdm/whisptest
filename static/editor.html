@@ -60,20 +60,25 @@ video { width: 100%; max-height: 52vh; background: #000; border-radius: 8px; dis
   border-bottom: 1px solid var(--borde); position: sticky; top: 0; background: var(--panel); z-index: 1; }
 #filtros .cuenta { color: var(--suave); font-size: 13px; }
 #loops { flex: 1; overflow: auto; padding: 0; gap: 0; }
-.loop { display: grid; grid-template-columns: 62px 150px 1fr; gap: 10px; align-items: start;
+.loop { display: grid; grid-template-columns: 96px 150px 1fr auto; gap: 10px; align-items: start;
   padding: 7px 12px; border-bottom: 1px solid var(--borde); border-left: 3px solid transparent; cursor: pointer; }
 .loop:hover { background: var(--panel-2); }
 .loop.sonando { background: #0f2a23; }
 .loop.elegido { border-left-color: var(--verde-claro); }
 .loop.cambiado .tiempo::after { content: " •"; color: var(--verde-claro); }
-.tiempo { color: var(--suave); font-variant-numeric: tabular-nums; padding-top: 6px; }
+.tiempo { color: var(--suave); font-variant-numeric: tabular-nums; font-size: 12px; padding-top: 7px; line-height: 1.3; }
 .loop select { width: 100%; }
-.texto { padding-top: 5px; }
+.texto { padding: 5px 6px; border-radius: 6px; cursor: text; outline: none; min-height: 1.45em; }
+.texto:hover { background: var(--fondo); }
+.texto:focus { background: var(--fondo); box-shadow: 0 0 0 1px var(--verde); }
+.texto:empty::before { content: "(vacío: se borra al guardar)"; color: var(--error); }
+.unir { padding: 3px 8px; font-size: 12px; color: var(--suave); visibility: hidden; margin-top: 3px; }
+.loop:hover .unir, .loop.elegido .unir { visibility: visible; }
 
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; height: auto; }
   #loops { max-height: 70vh; }
-  .loop { grid-template-columns: 52px 120px 1fr; }
+  .loop { grid-template-columns: 70px 110px 1fr auto; }
 }
 </style>
 </head>
@@ -96,8 +101,10 @@ video { width: 100%; max-height: 52vh; background: #000; border-radius: 8px; dis
       <div id="subtitulo"></div>
       <div class="atajos" style="margin-bottom:6px">Velocidad
         <span class="velocidad"><button data-v="1">1x</button><button data-v="1.5">1.5x</button><button data-v="2">2x</button></span></div>
-      <div class="atajos">Hacé clic en un loop para ir a ese momento. Con un loop elegido:
-        <kbd>1</kbd>–<kbd>9</kbd> cambia el hablante · <kbd>↑</kbd><kbd>↓</kbd> mueve · <kbd>Espacio</kbd> reproduce/pausa ·
+      <div class="atajos">Hacé clic en un loop para ir a ese momento y en su texto para corregirlo
+        (<kbd>Enter</kbd> confirma, <kbd>Esc</kbd> deshace; vacío = se borra). Con un loop elegido:
+        <kbd>1</kbd>–<kbd>9</kbd> cambia el hablante · <kbd>U</kbd> lo une con el siguiente ·
+        <kbd>↑</kbd><kbd>↓</kbd> mueve · <kbd>Espacio</kbd> reproduce/pausa ·
         <label><input type="checkbox" id="seguir" checked> seguir el video</label></div>
     </div>
     <div class="caja" id="hablantes"></div>
@@ -121,7 +128,8 @@ const visible = (i) => !filtro || (filtro === "sin-nombre" ? !hablantes[loops[i]
 const color = (h) => COLORES[(parseInt(h.slice(1)) - 1) % COLORES.length];
 const etiqueta = (h) => hablantes[h]?.nombre || `Hablante ${h.slice(1)}`;
 const orden = () => Object.keys(hablantes).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
-const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const mmss = (s) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, "0")}`;
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 function estado(texto, error = false) { $("estado").textContent = texto; $("estado").className = error ? "error" : ""; }
 function marcar() { cambios = true; $("guardar").disabled = false; estado("Cambios sin guardar"); }
 
@@ -146,7 +154,8 @@ async function cargar(nombre) {
   estado("Cargando...");
   try {
     const d = await api(`api/editor/datos?srt=${encodeURIComponent(nombre)}`);
-    srt = nombre; loops = d.loops; hablantes = d.hablantes; todos = d.todos;
+    // ids: los loops originales que forman cada uno (crece al unir); el servidor rearma con eso
+    srt = nombre; loops = d.loops.map((l, i) => ({ ...l, ids: [i] })); hablantes = d.hablantes; todos = d.todos;
     elegido = -1; sonando = -1; cambios = false; $("guardar").disabled = true;
     if (filtro && filtro !== "sin-nombre" && !hablantes[filtro]) filtro = "";
     $("descargar").href = `api/editor/srt?srt=${encodeURIComponent(nombre)}`; $("descargar").hidden = false;
@@ -157,7 +166,7 @@ async function cargar(nombre) {
 }
 
 function opciones(actual) {
-  return orden().map((h) => `<option value="${h}"${h === actual ? " selected" : ""}>${etiqueta(h)}</option>`).join("")
+  return orden().map((h) => `<option value="${h}"${h === actual ? " selected" : ""}>${esc(etiqueta(h))}</option>`).join("")
     + `<option value="nuevo">+ Hablante nuevo</option>`;
 }
 
@@ -192,15 +201,39 @@ function dibujarHablantes() {
 }
 
 function dibujarLoops() {
-  $("lista").innerHTML = loops.map((l, i) => `<div class="loop" data-i="${i}">
-      <span class="tiempo">${mmss(l.inicio)}</span>
+  $("lista").innerHTML = loops.map((l, i) => `<div class="loop${l.cambiado ? " cambiado" : ""}" data-i="${i}">
+      <span class="tiempo">${mmss(l.inicio)}<br>${mmss(l.fin)}</span>
       <select data-i="${i}" style="border-color:${color(l.hablante)}">${opciones(l.hablante)}</select>
-      <span class="texto">${l.texto.replace(/</g, "&lt;")}</span></div>`).join("");
+      <span class="texto" contenteditable="plaintext-only" spellcheck="false" data-i="${i}">${esc(l.texto)}</span>
+      ${i < loops.length - 1 ? `<button class="unir" data-i="${i}" title="Unir con el siguiente (U)">unir ↓</button>` : "<span></span>"}</div>`).join("");
   $("lista").querySelectorAll(".loop").forEach((fila) => fila.addEventListener("click", (e) => {
-    if (e.target.tagName === "SELECT") return;
-    elegir(+fila.dataset.i, true);
+    if (e.target.closest("select, button")) return;
+    elegir(+fila.dataset.i, !e.target.classList.contains("texto"));  // al editar el texto no salta el video
   }));
   $("lista").querySelectorAll("select").forEach((s) => s.addEventListener("change", () => asignar(+s.dataset.i, s.value)));
+  $("lista").querySelectorAll(".unir").forEach((b) => b.addEventListener("click", () => unir(+b.dataset.i)));
+  $("lista").querySelectorAll(".texto").forEach((t) => {
+    t.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); t.blur(); }
+      if (e.key === "Escape") { t.textContent = loops[+t.dataset.i].texto; t.blur(); }
+    });
+    t.addEventListener("blur", () => {
+      const i = +t.dataset.i, nuevo = t.textContent.replace(/\s+/g, " ").trim();
+      if (nuevo === loops[i].texto) return;
+      loops[i].texto = nuevo; loops[i].cambiado = true;
+      t.closest(".loop").classList.add("cambiado"); t.textContent = nuevo;
+      mostrarSubtitulo(); marcar();
+    });
+  });
+}
+
+function unir(i) {
+  if (i < 0 || i >= loops.length - 1) return;
+  if (!visible(i + 1)) { estado("El siguiente loop está oculto por el filtro: sacá el filtro para unirlos.", true); return; }
+  const a = loops[i], b = loops.splice(i + 1, 1)[0];
+  Object.assign(a, { ids: a.ids.concat(b.ids), texto: `${a.texto} ${b.texto}`.trim(), fin: b.fin, cambiado: true });
+  dibujarLoops(); dibujarHablantes(); aplicarFiltro(); elegir(i, false);
+  sonando = -1; mostrarSubtitulo(); marcar();
 }
 
 function dibujarFiltro() {
@@ -233,9 +266,9 @@ function asignar(i, h) {
   if (h === "nuevo") {
     h = "H" + (Math.max(0, ...orden().map((x) => parseInt(x.slice(1)))) + 1);
     hablantes[h] = { nombre: "", segundos: 0, muestra: false };
-    loops[i].hablante = h; dibujarHablantes(); dibujarLoops(); elegir(i, false);
+    loops[i].hablante = h; loops[i].cambiado = true; dibujarHablantes(); dibujarLoops(); elegir(i, false);
   } else {
-    loops[i].hablante = h;
+    loops[i].hablante = h; loops[i].cambiado = true;
     const s = document.querySelector(`.loop select[data-i="${i}"]`);
     s.value = h; s.style.borderColor = color(h);
     dibujarHablantes();
@@ -255,7 +288,7 @@ function elegir(i, saltar) {
 
 function mostrarSubtitulo() {
   const l = loops[sonando];
-  $("subtitulo").innerHTML = l ? `<span style="color:${color(l.hablante)};font-weight:600">${etiqueta(l.hablante)}:</span> ${l.texto.replace(/</g, "&lt;")}` : "";
+  $("subtitulo").innerHTML = l ? `<span style="color:${color(l.hablante)};font-weight:600">${esc(etiqueta(l.hablante))}:</span> ${esc(l.texto)}` : "";
 }
 
 $("video").addEventListener("timeupdate", () => {
@@ -299,7 +332,7 @@ $("guardar").addEventListener("click", async () => {
     const nombres = Object.fromEntries(orden().map((h) => [h, hablantes[h].nombre || ""]));
     const r = await api(`api/editor/guardar?srt=${encodeURIComponent(srt)}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ por_loop: loops.map((l) => l.hablante), nombres, todos }),
+      body: JSON.stringify({ loops: loops.map((l) => ({ ids: l.ids, hablante: l.hablante, texto: l.texto })), nombres, todos }),
     });
     cambios = false;
     document.querySelectorAll(".loop.cambiado").forEach((f) => f.classList.remove("cambiado"));
@@ -309,10 +342,11 @@ $("guardar").addEventListener("click", async () => {
 });
 
 document.addEventListener("keydown", (e) => {
-  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName) || document.activeElement.isContentEditable) return;
   if (e.key === " " && !$("video").hidden) { e.preventDefault(); $("video").paused ? $("video").play() : $("video").pause(); }
   else if (e.key === "ArrowDown") { e.preventDefault(); elegir(siguienteVisible(elegido, 1), true); }
   else if (e.key === "ArrowUp") { e.preventDefault(); elegir(siguienteVisible(elegido, -1), true); }
+  else if ((e.key === "u" || e.key === "U") && elegido >= 0) unir(elegido);
   else if (/^[1-9]$/.test(e.key) && elegido >= 0) {
     const h = orden()[+e.key - 1];
     if (h) asignar(elegido, h);

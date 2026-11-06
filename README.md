@@ -60,7 +60,9 @@ Los archivos llevan el motor en el nombre, así se pueden comparar: `<video>_<id
 
 ### Editor de hablantes (`editor.py`, `/editor`)
 
-Página aparte (se abre desde *Resultado → Hablantes*) para corregir quién dice cada loop: el video original se abre desde la compu de quien edita (no se sube, se reproduce desde el disco), el loop que suena se resalta y al hacer clic en uno el video salta ahí. Cada loop tiene su hablante (o uno nuevo), con atajos `1`–`9`, `↑`/`↓` y `Espacio`. Al guardar se corrigen las palabras en el `.hablantes.json` (así *Rearmar* respeta las correcciones) y se reescriben los dos SRT.
+Página aparte (se abre desde *Resultado → Hablantes*) para corregir quién dice cada loop: el video original se abre desde la compu de quien edita (no se sube, se reproduce desde el disco), el loop que suena se resalta y al hacer clic en uno el video salta ahí. Cada loop muestra inicio y fin y tiene su hablante (o uno nuevo), con atajos `1`–`9`, `↑`/`↓`, `Espacio` y `U` (unir con el siguiente). Velocidad 1x/1.5x/2x y filtro por hablante o "Sin nombre", que puede reproducir solo esas líneas (para reconocer a alguien y ponerle nombre). El texto se corrige haciendo clic (vacío = se borra el loop): con la misma cantidad de palabras cada una conserva sus tiempos, si no se reparten dentro del loop.
+
+Al guardar, los hablantes van al `.hablantes.json` y el texto corregido a las palabras del `.json` (un segmento por loop), así *Rearmar* respeta las dos cosas; las uniones de loops no (Rearmar arma los loops de cero). Se reescriben los dos SRT.
 
 Requiere aceptar los términos del modelo en Hugging Face y un token en `~/.cache/huggingface/token` solo para la primera descarga.
 
