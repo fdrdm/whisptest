@@ -2,6 +2,7 @@ import gradio as gr
 import stable_whisper
 import whisper
 import requests
+import json
 import re
 import os
 import logging
@@ -138,8 +139,10 @@ def _alinear(audio, tramos, progress, desde):
     progress(desde, desc="Sincronizando con el audio...")
     with gpu.trabajo("whisper"):
         model = _get_whisper()
+        # vad: la voz la detecta Silero y no el volumen; si no, el texto se estira sobre la música de
+        # una intro sin letra (Futurama: las primeras líneas quedaban 40 s antes)
         result = model.align(
-            audio, texto, language=_idioma(model, audio),
+            audio, texto, language=_idioma(model, audio), vad=True,
             progress_callback=lambda hecho, total: progress(desde + (1 - desde) * hecho / total if total else desde,
                                                             desc="Sincronizando con el audio..."),
         )
@@ -186,7 +189,7 @@ def _con_nemotron(audio, identificar, num_hablantes, progress):
 def _con_deepinfra(input_file, audio, identificar, num_hablantes, progress):
     """Nemotron en DeepInfra: ya trae tiempos y hablante por palabra; el idioma lo da el Whisper de DeepInfra.
 
-    Nada corre local salvo que los tiempos vengan rotos. Devuelve (result, etiquetas o None, nota del log).
+    Nada corre local salvo que los tiempos vengan rotos. Devuelve (result, etiquetas o None, nota del log, respuesta cruda).
     """
     segundos = len(audio) / nemotron.SR
     if segundos > nemotron.MAX_SEGUNDOS:
@@ -226,7 +229,7 @@ def _con_deepinfra(input_file, audio, identificar, num_hablantes, progress):
             else:
                 tramos.append([w["speaker"], w["word"]])
         result, crudos = _alinear(audio, tramos, progress, 0.9)
-    return result, _hache(crudos) if identificar else None, f"\tcosto_usd={costo_total:.3f}{nota}"
+    return result, _hache(crudos) if identificar else None, f"\tcosto_usd={costo_total:.3f}{nota}", d
 
 
 def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, motor="Whisper", *, ip, progress):
@@ -235,7 +238,7 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, mo
 
     # 1. Transcripción cruda (Gradio captura la barra de tqdm de Whisper)
     t0 = time.time()
-    audio, etiquetas, extra = None, None, ""
+    audio, etiquetas, extra, crudo = None, None, "", None
     if motor == "Nemotron":
         audio = whisper.load_audio(input_file)
         result, etiquetas, vram_nemotron = _con_nemotron(audio, identificar, num_hablantes, progress)
@@ -243,7 +246,7 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, mo
         extra = f"\tvram_nemotron={vram_nemotron:.1f}GB"
     elif motor == DEEPINFRA:
         audio = whisper.load_audio(input_file)
-        result, etiquetas, extra = _con_deepinfra(input_file, audio, identificar, num_hablantes, progress)
+        result, etiquetas, extra, crudo = _con_deepinfra(input_file, audio, identificar, num_hablantes, progress)
         vram_pico = gpu.pico_gb()
     else:
         parte_whisper = 0.8 if identificar else 1.0
@@ -266,6 +269,9 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, mo
     path_palabras = palabras_json(path_srt)
     os.makedirs(os.path.dirname(path_palabras), exist_ok=True)
     result.save_as_json(path_palabras)
+    if crudo:  # la respuesta de DeepInfra tal cual, para revisar cuando sale mal
+        with open(path_palabras[:-len(".json")] + ".crudo.json", "w", encoding="utf-8") as f:
+            json.dump(crudo, f, ensure_ascii=False)
 
     todas_las_palabras = [word for segment in result.segments for word in segment.words]
 
@@ -563,7 +569,7 @@ def transcripciones():
     carpeta = os.path.join(OUTPUT_DIR, "palabras")
     if not os.path.isdir(carpeta):
         return []
-    jsons = [f for f in os.listdir(carpeta) if f.endswith(".json") and not f.endswith(".hablantes.json")]
+    jsons = [f for f in os.listdir(carpeta) if f.endswith(".json") and not f.endswith((".hablantes.json", ".crudo.json"))]
     jsons.sort(key=lambda f: os.path.getmtime(os.path.join(carpeta, f)), reverse=True)
     return [f[:-len(".json")] + ".srt" for f in jsons]
 
