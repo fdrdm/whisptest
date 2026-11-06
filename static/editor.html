@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Editor de hablantes</title>
-<link rel="icon" href="favicon.ico">
+<link rel="icon" type="image/png" href="favicon.ico?v=wider">
 <style>
 :root {
   --fondo: #0a0a0a; --panel: #141414; --panel-2: #1b1b1b; --borde: #262626;
@@ -26,6 +26,7 @@ a { color: var(--verde-claro); }
 header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px;
   border-bottom: 1px solid var(--borde); background: var(--panel); position: sticky; top: 0; z-index: 2; }
 header h1 { font-size: 16px; margin: 0 8px 0 0; }
+#transcripcion { max-width: 38vw; text-overflow: ellipsis; }
 header .espacio { flex: 1; }
 #estado { color: var(--suave); font-size: 13px; }
 #estado.error { color: var(--error); }
@@ -49,7 +50,16 @@ video { width: 100%; max-height: 52vh; background: #000; border-radius: 8px; dis
 .hablante input { width: 100%; }
 .hablante .info { color: var(--suave); font-size: 12px; white-space: nowrap; }
 
-#loops { flex: 1; overflow: auto; padding: 0; }
+.velocidad { display: inline-flex; gap: 4px; margin-left: 6px; }
+.velocidad button { padding: 2px 9px; font-size: 12px; }
+.velocidad button.activo { background: var(--verde); border-color: var(--verde); color: #fff; }
+.hablante .info { background: none; border: 0; padding: 0; text-decoration: underline dotted; }
+.hablante .info:hover { color: var(--verde-claro); }
+
+#filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px;
+  border-bottom: 1px solid var(--borde); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+#filtros .cuenta { color: var(--suave); font-size: 13px; }
+#loops { flex: 1; overflow: auto; padding: 0; gap: 0; }
 .loop { display: grid; grid-template-columns: 62px 150px 1fr; gap: 10px; align-items: start;
   padding: 7px 12px; border-bottom: 1px solid var(--borde); border-left: 3px solid transparent; cursor: pointer; }
 .loop:hover { background: var(--panel-2); }
@@ -84,18 +94,29 @@ video { width: 100%; max-height: 52vh; background: #000; border-radius: 8px; dis
         No se sube: se reproduce directo desde tu disco.</div>
       <video id="video" controls hidden></video>
       <div id="subtitulo"></div>
+      <div class="atajos" style="margin-bottom:6px">Velocidad
+        <span class="velocidad"><button data-v="1">1x</button><button data-v="1.5">1.5x</button><button data-v="2">2x</button></span></div>
       <div class="atajos">Hacé clic en un loop para ir a ese momento. Con un loop elegido:
         <kbd>1</kbd>–<kbd>9</kbd> cambia el hablante · <kbd>↑</kbd><kbd>↓</kbd> mueve · <kbd>Espacio</kbd> reproduce/pausa ·
         <label><input type="checkbox" id="seguir" checked> seguir el video</label></div>
     </div>
     <div class="caja" id="hablantes"></div>
   </div>
-  <div class="caja columna" id="loops"></div>
+  <div class="caja columna" id="loops">
+    <div id="filtros">
+      <select id="filtro" aria-label="Filtrar por hablante"></select>
+      <label class="atajos"><input type="checkbox" id="solo-filtradas" checked> reproducir solo estas líneas</label>
+      <span class="cuenta" id="cuenta"></span>
+    </div>
+    <div id="lista"></div>
+  </div>
 </main>
 <script>
 const COLORES = ["#04a487", "#e0a43a", "#6aa2f0", "#e06a8a", "#a27ef0", "#5fc4d9", "#d9d14f", "#f08a5d", "#8bd17c", "#c98bd1"];
 const $ = (id) => document.getElementById(id);
 let srt = null, loops = [], hablantes = {}, todos = true, elegido = -1, sonando = -1, cambios = false, urlVideo = null;
+let filtro = "";  // "" = todos, "H3" = un hablante, "sin-nombre" = los que todavía no tienen nombre
+const visible = (i) => !filtro || (filtro === "sin-nombre" ? !hablantes[loops[i].hablante]?.nombre : loops[i].hablante === filtro);
 
 const color = (h) => COLORES[(parseInt(h.slice(1)) - 1) % COLORES.length];
 const etiqueta = (h) => hablantes[h]?.nombre || `Hablante ${h.slice(1)}`;
@@ -113,7 +134,9 @@ async function api(url, opciones) {
 async function cargarLista() {
   const lista = await api("api/editor/transcripciones");
   const pedido = new URLSearchParams(location.search).get("srt");
-  $("transcripcion").innerHTML = lista.length ? lista.map((n) => `<option>${n.replace(/</g, "&lt;")}</option>`).join("")
+  // value explícito: sin él, el navegador colapsa los espacios repetidos del nombre ("Sorry mom  jancy...")
+  const html = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  $("transcripcion").innerHTML = lista.length ? lista.map((n) => `<option value="${html(n)}">${html(n)}</option>`).join("")
     : "<option value=''>No hay transcripciones con hablantes</option>";
   if (pedido && lista.includes(pedido)) $("transcripcion").value = pedido;
   if (lista.length) await cargar($("transcripcion").value);
@@ -125,9 +148,10 @@ async function cargar(nombre) {
     const d = await api(`api/editor/datos?srt=${encodeURIComponent(nombre)}`);
     srt = nombre; loops = d.loops; hablantes = d.hablantes; todos = d.todos;
     elegido = -1; sonando = -1; cambios = false; $("guardar").disabled = true;
+    if (filtro && filtro !== "sin-nombre" && !hablantes[filtro]) filtro = "";
     $("descargar").href = `api/editor/srt?srt=${encodeURIComponent(nombre)}`; $("descargar").hidden = false;
     history.replaceState(null, "", `?srt=${encodeURIComponent(nombre)}`);
-    dibujarHablantes(); dibujarLoops();
+    dibujarHablantes(); dibujarLoops(); aplicarFiltro();
     estado(`${loops.length} loops · ${orden().length} hablantes`);
   } catch (e) { estado(e.message, true); }
 }
@@ -148,26 +172,61 @@ function dibujarHablantes() {
       <span class="tecla">${i < 9 ? i + 1 : ""}</span>
       <input type="text" data-h="${h}" value="${(hablantes[h].nombre || "").replace(/"/g, "&quot;")}" placeholder="Hablante ${h.slice(1)}">
       ${hablantes[h].muestra ? `<button data-muestra="${h}" title="Escuchar muestra">▶</button>` : "<span></span>"}
-      <span class="info">${cuenta[h] || 0} loops</span></div>`).join("");
-  $("hablantes").querySelectorAll("input[type=text]").forEach((inp) => inp.addEventListener("input", () => {
-    hablantes[inp.dataset.h].nombre = inp.value; marcar();
-    document.querySelectorAll(`.loop select option[value="${inp.dataset.h}"]`).forEach((o) => o.textContent = etiqueta(inp.dataset.h));
+      <button class="info" data-filtrar="${h}" title="Ver solo sus líneas">${cuenta[h] || 0} loops</button></div>`).join("");
+  $("hablantes").querySelectorAll("input[type=text]").forEach((inp) => {
+    inp.addEventListener("input", () => {
+      hablantes[inp.dataset.h].nombre = inp.value; marcar();
+      document.querySelectorAll(`.loop select option[value="${inp.dataset.h}"]`).forEach((o) => o.textContent = etiqueta(inp.dataset.h));
+      dibujarFiltro();
+    });
+    // Recién al salir del campo: con el filtro "Sin nombre", sus líneas no desaparecen mientras escribís
+    inp.addEventListener("change", aplicarFiltro);
+  });
+  $("hablantes").querySelectorAll("[data-filtrar]").forEach((b) => b.addEventListener("click", () => {
+    filtro = b.dataset.filtrar; aplicarFiltro();
   }));
+  dibujarFiltro();
   $("hablantes").querySelectorAll("[data-muestra]").forEach((b) => b.addEventListener("click", () =>
     new Audio(`api/editor/muestra?srt=${encodeURIComponent(srt)}&h=${b.dataset.muestra}`).play()));
   $("todos").addEventListener("change", (e) => { todos = e.target.checked; marcar(); });
 }
 
 function dibujarLoops() {
-  $("loops").innerHTML = loops.map((l, i) => `<div class="loop" data-i="${i}" style="--c:${color(l.hablante)}">
+  $("lista").innerHTML = loops.map((l, i) => `<div class="loop" data-i="${i}">
       <span class="tiempo">${mmss(l.inicio)}</span>
       <select data-i="${i}" style="border-color:${color(l.hablante)}">${opciones(l.hablante)}</select>
       <span class="texto">${l.texto.replace(/</g, "&lt;")}</span></div>`).join("");
-  $("loops").querySelectorAll(".loop").forEach((fila) => fila.addEventListener("click", (e) => {
+  $("lista").querySelectorAll(".loop").forEach((fila) => fila.addEventListener("click", (e) => {
     if (e.target.tagName === "SELECT") return;
     elegir(+fila.dataset.i, true);
   }));
-  $("loops").querySelectorAll("select").forEach((s) => s.addEventListener("change", () => asignar(+s.dataset.i, s.value)));
+  $("lista").querySelectorAll("select").forEach((s) => s.addEventListener("change", () => asignar(+s.dataset.i, s.value)));
+}
+
+function dibujarFiltro() {
+  const cuenta = {};
+  loops.forEach((l) => cuenta[l.hablante] = (cuenta[l.hablante] || 0) + 1);
+  const sinNombre = loops.filter((l) => !hablantes[l.hablante]?.nombre).length;
+  $("filtro").innerHTML = `<option value="">Todos los hablantes (${loops.length})</option>`
+    + orden().map((h) => `<option value="${h}">${etiqueta(h).replace(/</g, "&lt;")} (${cuenta[h] || 0})</option>`).join("")
+    + `<option value="sin-nombre">Sin nombre (${sinNombre})</option>`;
+  $("filtro").value = filtro;
+}
+
+function aplicarFiltro() {
+  $("filtro").value = filtro;
+  let n = 0;
+  document.querySelectorAll(".loop").forEach((fila) => {
+    const ver = visible(+fila.dataset.i);
+    fila.hidden = !ver; n += ver;
+  });
+  $("cuenta").textContent = filtro ? `${n} de ${loops.length} loops` : "";
+  $("solo-filtradas").parentElement.hidden = !filtro;
+}
+
+function siguienteVisible(desde, paso) {
+  for (let i = desde + paso; i >= 0 && i < loops.length; i += paso) if (visible(i)) return i;
+  return -1;
 }
 
 function asignar(i, h) {
@@ -182,7 +241,7 @@ function asignar(i, h) {
     dibujarHablantes();
   }
   document.querySelector(`.loop[data-i="${i}"]`).classList.add("cambiado");
-  mostrarSubtitulo(); marcar();
+  aplicarFiltro(); mostrarSubtitulo(); marcar();
 }
 
 function elegir(i, saltar) {
@@ -200,7 +259,14 @@ function mostrarSubtitulo() {
 }
 
 $("video").addEventListener("timeupdate", () => {
-  const t = $("video").currentTime;
+  const v = $("video"), t = v.currentTime;
+  // Con filtro: al terminar una línea del hablante se salta a la próxima (o se pausa si no hay más)
+  if (filtro && $("solo-filtradas").checked && !v.paused && !v.seeking
+      && !loops.some((l, k) => visible(k) && t >= l.inicio - 0.3 && t <= l.fin + 0.3)) {
+    const j = loops.findIndex((l, k) => visible(k) && l.inicio > t);
+    if (j >= 0) v.currentTime = loops[j].inicio; else v.pause();
+    return;
+  }
   let i = loops.findIndex((l) => t >= l.inicio && t <= l.fin + 0.15);
   if (i === sonando) return;
   document.querySelector(".loop.sonando")?.classList.remove("sonando");
@@ -245,13 +311,27 @@ $("guardar").addEventListener("click", async () => {
 document.addEventListener("keydown", (e) => {
   if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
   if (e.key === " " && !$("video").hidden) { e.preventDefault(); $("video").paused ? $("video").play() : $("video").pause(); }
-  else if (e.key === "ArrowDown") { e.preventDefault(); elegir(elegido + 1, true); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); elegir(elegido - 1, true); }
+  else if (e.key === "ArrowDown") { e.preventDefault(); elegir(siguienteVisible(elegido, 1), true); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); elegir(siguienteVisible(elegido, -1), true); }
   else if (/^[1-9]$/.test(e.key) && elegido >= 0) {
     const h = orden()[+e.key - 1];
     if (h) asignar(elegido, h);
   }
 });
+
+$("filtro").addEventListener("change", (e) => { filtro = e.target.value; aplicarFiltro(); });
+
+// Velocidad de reproducción (se recuerda en este navegador)
+function velocidad(v) {
+  $("video").playbackRate = v;
+  document.querySelectorAll(".velocidad button").forEach((b) => b.classList.toggle("activo", +b.dataset.v === v));
+  try { localStorage.setItem("editor_velocidad", v); } catch (e) {}
+}
+document.querySelectorAll(".velocidad button").forEach((b) => b.addEventListener("click", () => velocidad(+b.dataset.v)));
+$("video").addEventListener("loadedmetadata", () => velocidad(+(document.querySelector(".velocidad .activo")?.dataset.v || 1)));
+let guardada = 1;
+try { guardada = +localStorage.getItem("editor_velocidad") || 1; } catch (e) {}
+velocidad(guardada);
 
 window.addEventListener("beforeunload", (e) => { if (cambios) { e.preventDefault(); e.returnValue = ""; } });
 cargarLista().catch((e) => estado(e.message, true));

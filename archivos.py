@@ -48,10 +48,12 @@ def _clasificar(nombre):
     """(video, etiqueta) para un archivo de salida, o None si no es nuestro."""
     raiz, ext = os.path.splitext(nombre)
     if ext == ".srt":
-        con_nombres = " con nombres" if raiz.endswith(".nombres") else ""
-        raiz = raiz.removesuffix(".nombres")
+        # video_en.nemotron.nombres.srt → ("video", "SRT en Nemotron con nombres")
+        raiz, extras = re.fullmatch(r"(.*?)((?:\.(?:whisper|nemotron|nombres))*)", raiz).groups()
+        detalle = "".join({"whisper": " Whisper", "nemotron": " Nemotron", "nombres": " con nombres"}[e]
+                          for e in extras.split(".") if e)
         m = re.match(r"^(.*)_([A-Za-z]{2,3}(?:-[A-Za-z]{2})?)$", raiz)
-        return (m.group(1), f"SRT {m.group(2)}{con_nombres}") if m else (raiz, f"SRT{con_nombres}")
+        return (m.group(1), f"SRT {m.group(2)}{detalle}") if m else (raiz, f"SRT{detalle}")
     if ext == ".mp3":
         for sufijo, etiqueta in AUDIOS.items():
             if raiz.endswith(sufijo):

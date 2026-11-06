@@ -178,7 +178,8 @@ def procesar(input_file, ajustes=None, identificar=False, num_hablantes=None, mo
     duracion_total = result.duration or 0
     idioma_detectado = result.language or "autodetectado"
     nombre_base = os.path.splitext(os.path.basename(input_file))[0]
-    path_srt = os.path.join(OUTPUT_DIR, f"{nombre_base}_{idioma_detectado}.srt")
+    # El motor va en el nombre (video_en.nemotron.srt) para poder comparar las dos versiones
+    path_srt = os.path.join(OUTPUT_DIR, f"{nombre_base}_{idioma_detectado}.{motor.lower()}.srt")
 
     # 2. Guardamos las palabras con sus tiempos para poder rearmar los loops sin volver a transcribir
     path_palabras = palabras_json(path_srt)
@@ -427,15 +428,15 @@ def traducir_srt(archivo_srt, idioma_origen, idioma_destino, instrucciones, mode
     finally:
         gpu.descargar_ollama(modelo or OLLAMA_MODELS[0])
 
-    nombre_base = os.path.splitext(nombre_srt)[0]
-    con_nombres = ".nombres" if nombre_base.endswith(".nombres") else ""  # video_en.nombres → video_es.nombres
-    nombre_base = nombre_base.removesuffix(".nombres")
+    # video_en.nemotron.nombres → video_es.nemotron.nombres (el motor y los nombres se conservan)
+    nombre_base, extras = re.fullmatch(r"(.*?)((?:\.(?:whisper|nemotron|nombres))*)",
+                                       os.path.splitext(nombre_srt)[0]).groups()
     sufijo = target_code.split("-")[0]  # es-419 → video_es.srt
     sufijo_origen = source_code.split("-")[0]
     if nombre_base.endswith(f"_{sufijo_origen}"):
-        nombre_salida = f"{nombre_base[:-len(sufijo_origen)-1]}_{sufijo}{con_nombres}.srt"
+        nombre_salida = f"{nombre_base[:-len(sufijo_origen)-1]}_{sufijo}{extras}.srt"
     else:
-        nombre_salida = f"{nombre_base}_{sufijo}{con_nombres}.srt"
+        nombre_salida = f"{nombre_base}_{sufijo}{extras}.srt"
     path_salida = os.path.join(OUTPUT_DIR, nombre_salida)
 
     with open(path_salida, "w", encoding="utf-8") as f:
@@ -484,12 +485,12 @@ def transcripciones():
     return [f[:-len(".json")] + ".srt" for f in jsons]
 
 def _traducciones(nombre_srt):
-    """Otros SRT del mismo video: traducciones hechas con los loops anteriores."""
-    idioma = r"_[A-Za-z]{2,3}(?:-[A-Za-z]{2})?(?:\.nombres)?\.srt"
-    m = re.fullmatch(r"(.*)" + idioma, nombre_srt)
+    """Traducciones de esta transcripción (mismo video y mismo motor), hechas con los loops anteriores."""
+    idioma = r"_[A-Za-z]{2,3}(?:-[A-Za-z]{2})?"
+    m = re.fullmatch(r"(.*)" + idioma + r"((?:\.(?:whisper|nemotron))?)\.srt", nombre_srt)
     if not m:
         return []
-    patron = re.escape(m.group(1)) + idioma
+    patron = re.escape(m.group(1)) + idioma + re.escape(m.group(2)) + r"(?:\.nombres)?\.srt"
     propios = {nombre_srt, os.path.basename(srt_nombres(nombre_srt))}
     return sorted(f for f in os.listdir(OUTPUT_DIR) if f not in propios and re.fullmatch(patron, f))
 

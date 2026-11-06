@@ -25,6 +25,9 @@ def cleanup_stale_chunks():
         pass
 
 HEAD_HTML = """
+<!-- ?v=: que el navegador no siga usando el ícono de Gradio que tiene guardado -->
+<link rel="icon" type="image/png" href="/favicon.ico?v=wider">
+<link rel="apple-touch-icon" href="/favicon.ico?v=wider">
 <style>
 /* 1. Ajuste automático de texto y celdas en las tablas de Gradio */
 .gradio-dataframe table,
