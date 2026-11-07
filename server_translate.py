@@ -170,8 +170,8 @@ def _por_hablante(crudo):
 def _con_nemotron(audio, identificar, num_hablantes, progress):
     """Texto de Nemotron + tiempos alineando ese texto con Whisper. Devuelve (result, etiquetas o None, vram).
 
-    Va en tramos de ~10 min como DeepInfra: los hablantes de cada tramo son distintos (al mismo
-    personaje se le pone el mismo nombre en cada uno).
+    Va en tramos de ~5 min (nemotron.TRAMO_SEG, los mismos que DeepInfra): los hablantes de cada tramo
+    son distintos (al mismo personaje se le pone el mismo nombre en cada uno).
     """
     partes = nemotron.tramos(audio)
     tramos = []
@@ -195,7 +195,7 @@ def _con_deepinfra(input_file, audio, identificar, num_hablantes, progress):
     if segundos > nemotron.MAX_SEGUNDOS:
         raise gr.Error(f"Nemotron acepta hasta {nemotron.MAX_SEGUNDOS // 60} minutos de audio; este dura "
                        f"{segundos / 60:.0f}. Usá Whisper para este archivo.")
-    d = nemotron.deepinfra(input_file, segundos, num_hablantes, lambda f, desc="": progress(0.9 * f, desc=desc))
+    d = nemotron.deepinfra(audio, num_hablantes, lambda f, desc="": progress(0.9 * f, desc=desc))
     palabras = [w for w in d.get("words") or [] if w["word"].strip()]
     costo_total, nota = d.get("inference_status", {}).get("cost", 0), ""
     if not palabras:
@@ -658,8 +658,8 @@ def build_tabs(demo):
             with gr.Column():
                 motor = gr.Radio(list(MOTORES), value="Whisper", label="Motor",
                                  info="Whisper: rápido · Nemotron: mejores hablantes, ~2 min cada 10 de audio · "
-                                      "DeepInfra: Nemotron en la nube, ~USD 0,04 cada 20 min. "
-                                      "Los Nemotron numeran los hablantes de nuevo cada 10 min.")
+                                      "DeepInfra: Nemotron en la nube, ~1 min y ~USD 0,04 cada 20 min. "
+                                      "Los Nemotron van en tramos de 5 min y numeran los hablantes de nuevo en cada uno.")
                 num_hablantes = gr.Dropdown(["Automático"] + [str(n) for n in range(1, 11)], value="Automático",
                                             label="Cantidad de hablantes",
                                             info="Si la sabés, mejora la precisión. Los nombres se ponen después, "

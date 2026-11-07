@@ -41,7 +41,7 @@ PUERTO = 8091
 URL = f"http://127.0.0.1:{PUERTO}"
 CONTEXTO = 16384       # un tramo de 10 min usa ~7400 de audio + ~2000 de texto (con 65536: +0,3 GB de VRAM)
 MAX_SEGUNDOS = 3600    # límite oficial del modelo (por pedido: el local va en tramos de TRAMO_SEG)
-TRAMO_SEG = 600        # como DeepInfra: tramos de ~10 min, más estables y sin límite de duración
+TRAMO_SEG = 300        # tramos de ~5 min para los dos Nemotron (cortados en un silencio); ver deepinfra()
 RAM_MAX = "30G"        # medido: 12,4 GB con 30 min de audio
 LOG_SERVIDOR = os.path.join(BASE_DIR, "nemotron.log")
 SR = 16000
@@ -250,34 +250,57 @@ def deepinfra_disponible():
 def _ogg(input_file, desde=0, duracion=None):
     """Audio en opus mono 16 kHz (~4 MB cada 20 min): DeepInfra rechaza archivos pesados."""
     tramo = ["-ss", str(desde)] + (["-t", str(duracion)] if duracion else [])
-    r = subprocess.run(["ffmpeg", "-loglevel", "error", *tramo, "-i", input_file, "-vn", "-sn", "-dn", "-ac", "1",
-                        "-ar", str(SR), "-c:a", "libopus", "-b:a", "32k", "-f", "ogg", "pipe:1"],
-                       capture_output=True)
+    return _ffmpeg_ogg([*tramo, "-i", input_file, "-vn", "-sn", "-dn"])
+
+
+def _ogg_muestras(audio):
+    """Lo mismo a partir del audio float32 de whisper.load_audio() (un tramo ya cortado)."""
+    datos = (np.clip(audio, -1, 1) * 32767).astype(np.int16).tobytes()
+    return _ffmpeg_ogg(["-f", "s16le", "-ar", str(SR), "-ac", "1", "-i", "pipe:0"], datos)
+
+
+def _ffmpeg_ogg(entrada, stdin=None):
+    r = subprocess.run(["ffmpeg", "-loglevel", "error", *entrada, "-ac", "1", "-ar", str(SR), "-c:a", "libopus",
+                        "-b:a", "32k", "-f", "ogg", "pipe:1"], input=stdin, capture_output=True)
     if r.returncode != 0:
         raise RuntimeError(f"No se pudo leer el audio: {r.stderr.decode(errors='replace')[-300:]}")
     return r.stdout
 
 
-def deepinfra(input_file, segundos, cantidad, progress):
-    """Respuesta de DeepInfra: {"words": [{"word", "start", "end", "speaker"}...], "inference_status": {"cost"...}}.
+def deepinfra(audio, cantidad, progress):
+    """Transcripción de DeepInfra para el audio (float32, 16 kHz), en tramos cortos mandados en paralelo.
 
-    Siempre con diarize y la instrucción con <spk:N>: sin eso devuelve una sola voz (y sin
-    diarize, en Daria 101 perdió un cuarto de las palabras). Los hablantes vienen numerados
-    de nuevo en cada tramo de ~10 min que corta DeepInfra.
+    Devuelve {"words": [{"word", "start", "end", "speaker"}...], "segments": [...], "inference_status": {"cost"},
+    "tramos": n}. Los tiempos ya están corridos al audio entero y los hablantes llevan el número de tramo
+    ("2:speaker_0"): DeepInfra los numera de nuevo en cada pedido.
+
+    Por qué en tramos: la alineación de tiempos de DeepInfra se degrada con el largo del audio (Daria 102
+    entera: 72% de las palabras en su tiempo en el minuto 7-10; ese tramo solo: 99,8%). Los mismos tramos
+    (TRAMO_SEG) se usan para el Nemotron local, así los dos motores se comparan igual. Siempre con
+    diarize y la instrucción con <spk:N>: sin eso devuelve una sola voz o pierde palabras.
     """
-    progress(0, desc="Preparando el audio para DeepInfra...")
-    audio = _ogg(input_file)
+    partes = tramos(audio)
     datos = {"chunk_level": "word", "diarize": "true", "instruction": prompt(True, cantidad)}
-    ex = concurrent.futures.ThreadPoolExecutor(1)
-    pedido = ex.submit(_pedir, DEEPINFRA_URL, audio, datos, 1800)
+    progress(0, desc=f"Preparando el audio para DeepInfra ({len(partes)} tramos)...")
+    ex = concurrent.futures.ThreadPoolExecutor(4)
+    pedidos = [ex.submit(_pedir, DEEPINFRA_URL, _ogg_muestras(audio[a:b]), datos, 1800) for a, b in partes]
     ex.shutdown(wait=False)  # al cancelar no se espera la respuesta (DeepInfra la cobra igual)
     t0 = time.time()
-    # No hay avance real: se estima (Daria 101: 114 s para 21 min de audio)
-    while not pedido.done():
-        s = int(time.time() - t0)
-        progress(min(s / (segundos * 0.1 + 30), 0.95), desc=f"Nemotron (DeepInfra) transcribiendo... {s // 60}:{s % 60:02d}")
+    while not all(p.done() for p in pedidos):
+        s, hechos = int(time.time() - t0), sum(p.done() for p in pedidos)
+        progress(min((hechos + 0.5) / len(partes), 0.95),
+                 desc=f"Nemotron (DeepInfra) transcribiendo... {hechos} de {len(partes)} tramos · {s // 60}:{s % 60:02d}")
         time.sleep(1)
-    return pedido.result()
+    salida = {"words": [], "segments": [], "inference_status": {"cost": 0.0}, "tramos": len(partes)}
+    for k, ((a, _), p) in enumerate(zip(partes, pedidos)):
+        d = p.result()
+        desfase = a / SR
+        for clave in ("words", "segments"):
+            for x in d.get(clave) or []:
+                salida[clave].append({**x, "start": x["start"] + desfase, "end": x["end"] + desfase,
+                                      "speaker": f"{k}:{x.get('speaker')}"})
+        salida["inference_status"]["cost"] += d.get("inference_status", {}).get("cost", 0) or 0
+    return salida
 
 
 def _pedir(url, audio, datos, timeout):
